@@ -151,46 +151,78 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
   const linkCls = "text-[16px] tracking-[-0.04em] uppercase text-[#1a1a1a] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
 
   return (
-    // FIX 6 (from previous): system cursor everywhere on home except carousel area
-    <div className="relative w-full h-full bg-white" onMouseMove={handleMouseMove}>
+    // RESPONSIVE: below `lg` (1024px) we use a normal, stacked, scrollable layout.
+    // At `lg` and above we switch to the original pixel-perfect desktop layout.
+    <div className="relative w-full min-h-full lg:h-full bg-white" onMouseMove={handleMouseMove}>
 
-      {/* FIX 7 & FIX 4: updated text, Gabriel Braga is now pure static text (no link) */}
-      <p className="absolute top-[40px] left-[40px] max-w-[524px] text-[32px] leading-[40px] text-[#1a1a1a] tracking-[0.001em] [word-break:break-word] m-0 select-none">
-        <span>{"Hi, I'm Gabriel Braga, "}</span>
-        <span className="text-[#757575]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
-      </p>
+      {/* ── Mobile / tablet layout (< lg) ─────────────────────────────────── */}
+      <div className="flex flex-col gap-8 p-6 pb-12 lg:hidden">
+        <p className="max-w-[560px] text-[22px] leading-[30px] sm:text-[26px] sm:leading-[34px] text-[#1a1a1a] tracking-[0.001em] [word-break:break-word] m-0 select-none">
+          <span>{"Hi, I'm Gabriel Braga, "}</span>
+          <span className="text-[#757575]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
+        </p>
 
-      {/* Carousel: pure opacity fade, image only, no labels */}
-      <div
-        className="absolute top-[40px] bottom-[40px] rounded-[12px] overflow-hidden"
-        style={{ left: 'calc(37.5% + 18px)', right: '40px', cursor: 'none' }}
-        onMouseEnter={() => setViewCursorVisible(true)}
-        onMouseLeave={() => setViewCursorVisible(false)}
-        onClick={() => onOpenProject(carouselItems[idx].project)}
-      >
-        {carouselItems.map((item, i) => (
-          <img
-            key={i}
-            src={item.img}
-            alt=""
-            // FIX 1: first image eager, rest lazy so initial load is fast
-            loading={i === 0 ? 'eager' : 'lazy'}
-            decoding="async"
-            fetchPriority={i === 0 ? 'high' : 'low'}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-            style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease' }}
-          />
-        ))}
+        <div
+          className="relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-[12px] overflow-hidden"
+          onClick={() => onOpenProject(carouselItems[idx].project)}
+        >
+          {carouselItems.map((item, i) => (
+            <img
+              key={i}
+              src={item.img}
+              alt=""
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={i === 0 ? 'high' : 'low'}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease' }}
+            />
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-x-10 gap-y-3" style={{ fontFeatureSettings: '"dlig" 1' }}>
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkCls}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkCls}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" className={linkCls}>EMAIL</a>
+        </div>
       </div>
 
-      {/* FIX 2: real working links with verified email */}
-      <div
-        className="absolute bottom-[40px] left-[40px] flex gap-[48px]"
-        style={{ fontFeatureSettings: '"dlig" 1' }}
-      >
-        <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkCls}>LINKEDIN</a>
-        <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkCls}>MEDIUM</a>
-        <a href="mailto:bragahauser@gmail.com" className={linkCls}>EMAIL</a>
+      {/* ── Desktop layout (>= lg) — original pixel-perfect design ────────── */}
+      <div className="hidden lg:block absolute inset-0">
+        <p className="absolute top-[40px] left-[40px] max-w-[524px] text-[32px] leading-[40px] text-[#1a1a1a] tracking-[0.001em] [word-break:break-word] m-0 select-none">
+          <span>{"Hi, I'm Gabriel Braga, "}</span>
+          <span className="text-[#757575]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
+        </p>
+
+        <div
+          className="absolute top-[40px] bottom-[40px] rounded-[12px] overflow-hidden"
+          style={{ left: 'calc(37.5% + 18px)', right: '40px', cursor: 'none' }}
+          onMouseEnter={() => setViewCursorVisible(true)}
+          onMouseLeave={() => setViewCursorVisible(false)}
+          onClick={() => onOpenProject(carouselItems[idx].project)}
+        >
+          {carouselItems.map((item, i) => (
+            <img
+              key={i}
+              src={item.img}
+              alt=""
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={i === 0 ? 'high' : 'low'}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease' }}
+            />
+          ))}
+        </div>
+
+        <div
+          className="absolute bottom-[40px] left-[40px] flex gap-[48px]"
+          style={{ fontFeatureSettings: '"dlig" 1' }}
+        >
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkCls}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkCls}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" className={linkCls}>EMAIL</a>
+        </div>
       </div>
 
       <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />
@@ -219,15 +251,42 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
   }, [id])
 
   return (
-    // Single overflow-y: auto scroll container — one scroll for both columns
+    // fixed inset-0 so the overlay always covers the full viewport, regardless
+    // of whatever scroll position the Home page (behind it) is at.
     <div
-      className="absolute inset-0 overflow-y-auto bg-white"
+      className="fixed inset-0 overflow-y-auto bg-white"
       style={{ cursor: 'none' }}
       onMouseMove={e => setCursor({ x: e.clientX, y: e.clientY })}
       onClick={onClose}
     >
-      {/* Flex row: both columns inside the same scroll container */}
-      <div className="flex items-start" style={{ paddingTop: 40, paddingBottom: 40 }}>
+      {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
+      <div className="flex flex-col gap-10 p-6 pb-16 lg:hidden">
+        <div>
+          <p className="text-[22px] leading-[28px] text-[#1a1a1a] tracking-[0.001em] m-0">{project.title}</p>
+          <p className="text-[22px] leading-[28px] text-[#757575] tracking-[0.001em] m-0">{project.subtitle}</p>
+        </div>
+        <div className="flex flex-col gap-[20px]">
+          {project.paragraphs.map((p, i) => (
+            <p key={i} className="text-[16px] leading-[24px] text-[#333] text-justify tracking-[0.001em] [word-break:break-word] m-0">{p}</p>
+          ))}
+        </div>
+        <div className="flex flex-col gap-[20px]">
+          {project.images.map((img, i) => (
+            <div key={i} className="relative w-full aspect-[4/3] rounded-[12px] overflow-hidden">
+              <img
+                src={img}
+                alt=""
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Desktop layout (>= lg) — original two-column sticky design ───── */}
+      <div className="hidden lg:flex items-start" style={{ paddingTop: 40, paddingBottom: 40 }}>
 
         {/* Left: text column — sticky so it stops when content ends */}
         <div
@@ -242,7 +301,6 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
             ref={textRef}
             style={{ position: 'sticky', top: stickyTop, alignSelf: 'flex-start' }}
           >
-            {/* FIX 6: larger gap between title block and body text */}
             <div style={{ marginBottom: 72 }}>
               <p className="text-[28px] leading-[32px] text-[#1a1a1a] tracking-[0.001em] m-0">{project.title}</p>
               <p className="text-[28px] leading-[32px] text-[#757575] tracking-[0.001em] m-0">{project.subtitle}</p>
@@ -264,7 +322,6 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
                 className="relative w-full rounded-[12px] overflow-hidden"
                 style={{ height: '85vh' }}
               >
-                {/* FIX 1: lazy load project images below the fold */}
                 <img
                   src={img}
                   alt=""
@@ -278,7 +335,6 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
         </div>
       </div>
 
-      {/* FIX 4: no contact links on project pages */}
       <CloseCursor x={cursor.x} y={cursor.y} />
     </div>
   )
@@ -300,15 +356,17 @@ export default function App() {
   }
 
   return (
-    <div className="fixed inset-0 bg-white overflow-hidden">
-      {/* FIX 4: About Me removed — only Home and Project pages */}
-      <div className="absolute inset-0">
+    // RESPONSIVE: on mobile/tablet the page scrolls normally (content is taller
+    // than the viewport). On desktop (lg+) we keep the original fixed, exact-
+    // 100vh layout, since that design was built to fit the screen perfectly.
+    <div className="relative min-h-screen overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
+      <div className="relative lg:absolute lg:inset-0">
         <HomePage onOpenProject={openProject} />
       </div>
 
       {overlay && (
         <div
-          className="absolute inset-0"
+          className="fixed inset-0"
           style={{
             transform: overlayVisible ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)',
