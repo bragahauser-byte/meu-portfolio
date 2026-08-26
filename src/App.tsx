@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 // ── Home carousel images ──────────────────────────────────────────────────────
 import imgC0 from '@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png'
@@ -19,12 +19,16 @@ import imgPS5 from '@/imports/Playstation-1/1bfd329f51e198222cbf1335e958f93e9bbe
 import imgPS6 from '@/imports/Playstation-1/957bca79229f9f620b8e6263af445e3b16bc178b.png'
 
 // ── Decolar detail ────────────────────────────────────────────────────────────
-import imgDec1 from '@/imports/Decolar/ff2b5873c8cee333b01b6e6533b5f618b33964a4.png'
-import imgDec2 from '@/imports/Decolar/3eeeafbfa5e81e206d3aa542ddbf033099ce29ef.png'
-import imgDec3 from '@/imports/Decolar/ee8f8429dc61aa11f3db8c464272e8958de4ea9b.png'
-import imgDec4 from '@/imports/Decolar/ef13dcea97cdbc0ead8e3790172b137135c928ea.png'
-import imgDec5 from '@/imports/Decolar/9d622b159fbab4fd1b1c6ab3b7118651b03856f0.png'
-import imgDec6 from '@/imports/Decolar/4ef7e77b40063c585250ba438ce5c78b9c850b79.png'
+import imgDec1 from '@/imports/Decolar/1.jpg'
+import imgDec2 from '@/imports/Decolar/2.jpg'
+import imgDec3 from '@/imports/Decolar/3.jpg'
+import imgDec4 from '@/imports/Decolar/4.jpg'
+import imgDec5 from '@/imports/Decolar/5.jpg'
+import imgDec6 from '@/imports/Decolar/6.jpg'
+import imgDec7 from '@/imports/Decolar/7.jpg'
+import imgDec8 from '@/imports/Decolar/8.jpg'
+import imgDec9 from '@/imports/Decolar/9.jpg'
+import imgDec10 from '@/imports/Decolar/10.jpg'
 
 // ── Soundroom detail ──────────────────────────────────────────────────────────
 import imgSnd1 from '@/imports/Soundroom/5c1c7db8bda671d3301de454303f2df32f7f02e6.png'
@@ -56,9 +60,9 @@ const psText = [
 ]
 
 const decolarText = [
-  `Planning a trip with friends seems exciting at first, but it can quickly turn into a problem. What starts simple transforms into long conversations, indecision, and lack of progress. Differences in expectations, budget, and availability make it difficult for the group to align, and often the trip doesn't even happen. For platforms like Decolar, this is a critical point, since everything depends on the user's decision.`,
-  `The main difficulty lies in the group process itself. Aligning everything manually takes time, generates doubts, and ultimately stalls the decision. The longer the group takes, the greater the chance of losing interest and giving up altogether. The goal of the project was to make this process simpler and more organized, helping the group reach a decision more quickly and clearly — not by eliminating collaboration, but by better structuring how it happens.`,
-  `The insight was realizing that the problem isn't a lack of options, but a lack of clarity. When each person can express their preferences individually, and this input is organized intelligently, deciding becomes much easier. From there, the solution took shape as a system based on a quick quiz, where each person indicates their budget, dates, and travel style. Based on these answers, the product suggests three destinations that balance the group's profile, showing a compatibility percentage for each to help guide the choice.`,
+  `Planning a trip with friends seems exciting at first, but it can quickly turn into a problem. What starts simple transforms into long conversations, too many options, indecision, and lack of progress. Differences in expectations, budget, travel styles, and availability make it difficult for the group to align, and often the trip doesn't even happen. For platforms like Decolar, this is a critical point, since everything depends on the user's decision.`,
+  `The main difficulty lies in the group process itself. Much of the planning happens outside the product, through WhatsApp conversations, shared links, and different opinions. Aligning everything manually takes time, generates doubts, and ultimately stalls the decision. The longer the group takes, the greater the chance of losing interest and giving up altogether. The goal of the project was to make this process simpler and more organized, helping the group reach a decision more quickly and clearly — not by eliminating collaboration, but by better structuring how it happens.`,
+  `The insight was realizing that the problem isn't a lack of options, but a lack of clarity. When each person can express their preferences individually, and this input is organized intelligently, deciding becomes much easier. From there, the solution took shape as a system based on a quick quiz, where each person indicates their budget, dates, travel style, and interests. Based on these answers, the product suggests three destinations that best match the group's profile, showing a compatibility percentage for each one to help guide the choice.`,
   `As a result, the process becomes less confusing and more guided, increasing the chances of the group actually making a decision. And if it's not yet time to buy, the experience continues through a shared piggy bank, helping the group manage money together and stay engaged until the trip finally happens.`,
 ]
 
@@ -81,7 +85,7 @@ const projects: Record<ProjectId, { title: string; subtitle: string; paragraphs:
     title: 'Decolar',
     subtitle: 'Design study',
     paragraphs: decolarText,
-    images: [imgDec1, imgDec2, imgDec3, imgDec4, imgDec5, imgDec6],
+    images: [imgDec1, imgDec2, imgDec3, imgDec4, imgDec5, imgDec6, imgDec7, imgDec8, imgDec9, imgDec10],
   },
   soundroom: {
     title: 'Soundroom',
@@ -147,8 +151,11 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
     setCursor({ x: e.clientX, y: e.clientY })
   }, [])
 
-  // FIX 2: confirmed email is bragahauser@gmail.com (Hauser with A)
-  const linkCls = "text-[16px] tracking-[-0.04em] uppercase text-[#1a1a1a] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
+  // Uppercase text always *reads* larger than mixed-case at the same px size,
+  // so the links are set a notch below the title's size to look visually
+  // equal — not literally equal. Same 3:4 ratio kept at both breakpoints.
+  const linkClsDesktop = "text-[16px] leading-[24px] font-medium tracking-[0.06em] uppercase text-[#000000] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
+  const linkClsMobile = "text-[12px] leading-[16px] font-medium tracking-[0.08em] uppercase text-[#000000] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
 
   return (
     // RESPONSIVE: below `lg` (1024px) we use a normal, stacked, scrollable layout.
@@ -157,13 +164,13 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
 
       {/* ── Mobile / tablet layout (< lg) ─────────────────────────────────── */}
       <div className="flex flex-col gap-8 p-6 pb-12 lg:hidden">
-        <p className="max-w-[560px] text-[22px] leading-[30px] sm:text-[26px] sm:leading-[34px] text-[#1a1a1a] tracking-[0.001em] [word-break:break-word] m-0 select-none">
-          <span>{"Hi, I'm Gabriel Braga, "}</span>
-          <span className="text-[#757575]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
+        <p className="anim-text max-w-[560px] text-[16px] leading-[24px] text-[#000000] tracking-[-0.01em] [word-break:break-word] m-0 select-none">
+          <span className="font-medium">{"Hi, I'm Gabriel Braga, "}</span>
+          <span className="font-normal text-[#707070]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
         </p>
 
         <div
-          className="relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-[12px] overflow-hidden"
+          className="anim-image relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-[12px] overflow-hidden"
           onClick={() => onOpenProject(carouselItems[idx].project)}
         >
           {carouselItems.map((item, i) => (
@@ -180,22 +187,22 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-x-10 gap-y-3" style={{ fontFeatureSettings: '"dlig" 1' }}>
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkCls}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkCls}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" className={linkCls}>EMAIL</a>
+        <div className="anim-footer w-full max-w-[560px] flex flex-wrap justify-between items-center gap-x-6 gap-y-2" style={{ fontFeatureSettings: '"dlig" 1' }}>
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkClsMobile}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkClsMobile}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" className={linkClsMobile}>EMAIL</a>
         </div>
       </div>
 
       {/* ── Desktop layout (>= lg) — original pixel-perfect design ────────── */}
       <div className="hidden lg:block absolute inset-0">
-        <p className="absolute top-[40px] left-[40px] max-w-[524px] text-[32px] leading-[40px] text-[#1a1a1a] tracking-[0.001em] [word-break:break-word] m-0 select-none">
-          <span>{"Hi, I'm Gabriel Braga, "}</span>
-          <span className="text-[#757575]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
+        <p className="anim-text absolute top-[40px] left-[40px] max-w-[524px] text-[24px] leading-[32px] text-[#000000] tracking-[-0.01em] [word-break:break-word] m-0 select-none">
+          <span className="font-medium">{"Hi, I'm Gabriel Braga, "}</span>
+          <span className="font-normal text-[#707070]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
         </p>
 
         <div
-          className="absolute top-[40px] bottom-[40px] rounded-[12px] overflow-hidden"
+          className="anim-image absolute top-[40px] bottom-[40px] rounded-[12px] overflow-hidden"
           style={{ left: 'calc(37.5% + 18px)', right: '40px', cursor: 'none' }}
           onMouseEnter={() => setViewCursorVisible(true)}
           onMouseLeave={() => setViewCursorVisible(false)}
@@ -216,12 +223,12 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
         </div>
 
         <div
-          className="absolute bottom-[40px] left-[40px] flex gap-[48px]"
-          style={{ fontFeatureSettings: '"dlig" 1' }}
+          className="anim-footer absolute bottom-[40px] left-[40px] flex justify-between items-center"
+          style={{ width: 'min(524px, calc(37.5% - 58px))', fontFeatureSettings: '"dlig" 1' }}
         >
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkCls}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkCls}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" className={linkCls}>EMAIL</a>
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkClsDesktop}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkClsDesktop}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" className={linkClsDesktop}>EMAIL</a>
         </div>
       </div>
 
@@ -235,21 +242,6 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
   const [cursor, setCursor] = useState({ x: -100, y: -100 })
   const project = projects[id]
 
-  // FIX 3: single scroll container; sticky text uses correct formula.
-  // stickyTop = min(40, vh - textHeight - 40).
-  // • Short text (textHeight < vh−80): min(40, positive>40) = 40  → sticks at 40px from top, always visible.
-  // • Long text (textHeight > vh−80): min(40, negative)   = negative → scrolls until text bottom = 40px from viewport bottom, then sticks.
-  const textRef = useRef<HTMLDivElement>(null)
-  const [stickyTop, setStickyTop] = useState(40)
-
-  useLayoutEffect(() => {
-    const el = textRef.current
-    if (!el) return
-    const h = el.scrollHeight
-    const vh = window.innerHeight
-    setStickyTop(Math.min(40, vh - h - 40))
-  }, [id])
-
   return (
     // fixed inset-0 so the overlay always covers the full viewport, regardless
     // of whatever scroll position the Home page (behind it) is at.
@@ -262,12 +254,12 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
       <div className="flex flex-col gap-10 p-6 pb-16 lg:hidden">
         <div>
-          <p className="text-[22px] leading-[28px] text-[#1a1a1a] tracking-[0.001em] m-0">{project.title}</p>
-          <p className="text-[22px] leading-[28px] text-[#757575] tracking-[0.001em] m-0">{project.subtitle}</p>
+          <p className="text-[16px] leading-[24px] font-medium text-[#000000] tracking-[-0.01em] m-0">{project.title}</p>
+          <p className="text-[16px] leading-[24px] font-normal text-[#707070] tracking-[-0.01em] m-0">{project.subtitle}</p>
         </div>
-        <div className="flex flex-col gap-[20px]">
+        <div className="flex flex-col gap-[24px]">
           {project.paragraphs.map((p, i) => (
-            <p key={i} className="text-[16px] leading-[24px] text-[#333] text-justify tracking-[0.001em] [word-break:break-word] m-0">{p}</p>
+            <p key={i} className="text-[16px] leading-[24px] text-[#000000] text-justify tracking-normal [word-break:break-word] m-0">{p}</p>
           ))}
         </div>
         <div className="flex flex-col gap-[20px]">
@@ -286,28 +278,31 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
       </div>
 
       {/* ── Desktop layout (>= lg) — original two-column sticky design ───── */}
-      <div className="hidden lg:flex items-start" style={{ paddingTop: 40, paddingBottom: 40 }}>
+      {/* No `items-start` here: the row keeps the default `stretch`, so the
+          Left column's box grows to match the Right column's full height.
+          That gives the sticky text room to stick — and, combined with the
+          40px bottom padding on Left, it stops with a clean 40px gap above
+          the bottom instead of leaving blank space once the text runs out. */}
+      <div className="hidden lg:flex" style={{ paddingTop: 40, paddingBottom: 40 }}>
 
-        {/* Left: text column — sticky so it stops when content ends */}
+        {/* Left: text column — sticky, stops 40px before the column ends */}
         <div
           style={{
             flexShrink: 0,
             width: 'calc(37.5% - 18px)',
             paddingLeft: 40,
             paddingRight: 40,
+            paddingBottom: 40,
           }}
         >
-          <div
-            ref={textRef}
-            style={{ position: 'sticky', top: stickyTop, alignSelf: 'flex-start' }}
-          >
+          <div style={{ position: 'sticky', top: 40 }}>
             <div style={{ marginBottom: 72 }}>
-              <p className="text-[28px] leading-[32px] text-[#1a1a1a] tracking-[0.001em] m-0">{project.title}</p>
-              <p className="text-[28px] leading-[32px] text-[#757575] tracking-[0.001em] m-0">{project.subtitle}</p>
+              <p className="text-[24px] leading-[32px] font-medium text-[#000000] tracking-[-0.01em] m-0">{project.title}</p>
+              <p className="text-[24px] leading-[32px] font-normal text-[#707070] tracking-[-0.01em] m-0">{project.subtitle}</p>
             </div>
             <div className="flex flex-col gap-[24px]">
               {project.paragraphs.map((p, i) => (
-                <p key={i} className="text-[24px] leading-[32px] text-[#333] text-justify tracking-[0.001em] [word-break:break-word] m-0">{p}</p>
+                <p key={i} className="text-[16px] leading-[24px] text-[#000000] text-justify tracking-normal [word-break:break-word] m-0">{p}</p>
               ))}
             </div>
           </div>
