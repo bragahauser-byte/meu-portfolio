@@ -1,3 +1,3 @@
 # Git LFS foi removido deste projeto porque o GitHub Pages
-# não consegue servir arquivos armazenados via Git LFS.
-# Todos os arquivos agora são tratados como blobs normais do Git.
+# nao consegue servir arquivos armazenados via Git LFS.
+# Todos os arquivos agora sao tratados como blobs normais do Git.
