@@ -3,7 +3,7 @@
   "description": "Gabriel Braga Portfolio",
   "language": "En",
   "robots": {
-    "index": false
+    "index": true
   },
   "icons": {
     "icon": "/.figma/make/favicon.png"
