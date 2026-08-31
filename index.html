@@ -1,7 +1,19 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="<!-- figma:lang -->">
 
   <head>
+    <script type="text/javascript">
+  (function(l) {
+    if (l.search[1] === '/') {
+      var decoded = l.search.slice(1).split('&').map(function(s) {
+        return s.replace(/~and~/g, '&')
+      }).join('?');
+      window.history.replaceState(null, null,
+          l.pathname.slice(0, -1) + decoded + l.hash
+      );
+    }
+  }(window.location))
+</script>
 
     <!-- figma:head-start -->
 
@@ -59,25 +71,29 @@
     {
       "@type": "Occupation",
       "name": "Designer",
+      "occupationLocation": {
+        "@type": "Country",
+        "name": "Brazil"
+      },
       "startDate": "2026",
       "description": "Design de produtos e experiências digitais de forma colaborativa e iterativa, incluindo conceitos iniciais, fluxos de usuários, design visual e prototipagem."
     },
     {
       "@type": "Occupation",
       "name": "Designer",
+      "occupationLocation": {
+        "@type": "Country",
+        "name": "Brazil"
+      },
       "startDate": "2024",
       "endDate": "2026",
-      "worksFor": {
-        "@type": "Organization",
-        "name": "Cherey/Beauty"
-      },
       "description": "Criação de posters, banners, materiais visuais para sites, redes sociais e eventos, além de construção de sites de e-commerce."
     }
   ],
   "alumniOf": {
     "@type": "CollegeOrUniversity",
     "name": "Universidade Anhembi Morumbi",
-    "description": "Digital Design, 2023–2026"
+    "description": "Curso de Digital Design, 2023–2026"
   },
   "sameAs": [
     "https://www.linkedin.com/in/gabriel-bragaa/",

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 // ── Home carousel images ──────────────────────────────────────────────────────
 import imgC0 from '@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png'
@@ -353,30 +354,63 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
+const pathToProject: Record<string, ProjectId> = {
+  '/decolar': 'decolar',
+  '/sound-room': 'soundroom',
+  '/playstation-connect': 'playstation',
+}
+const projectToPath: Record<ProjectId, string> = {
+  decolar: '/decolar',
+  soundroom: '/sound-room',
+  playstation: '/playstation-connect',
+}
+
 export default function App() {
-  const [overlay, setOverlay] = useState<ProjectId | null>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const overlay = pathToProject[location.pathname] ?? null
+
   const [overlayVisible, setOverlayVisible] = useState(false)
+  const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
+
+  useEffect(() => {
+    if (overlay) {
+      setRenderedOverlay(overlay)
+      requestAnimationFrame(() => requestAnimationFrame(() => setOverlayVisible(true)))
+    } else if (renderedOverlay) {
+      setOverlayVisible(false)
+      const t = setTimeout(() => setRenderedOverlay(null), 420)
+      return () => clearTimeout(t)
+    }
+  }, [overlay])
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="description"]')
+    if (overlay) {
+      const p = projects[overlay]
+      document.title = `${p.title} — UX/UI Case Study | Gabriel Braga`
+      if (meta) meta.setAttribute('content', `Case study de UX/UI Design: ${p.title}. ${p.subtitle}.`)
+    } else {
+      document.title = 'Gabriel Braga — Digital Designer'
+      if (meta) meta.setAttribute('content', "Hi, I'm Gabriel Braga, a digital designer from São Paulo who likes turning ideas into clear, functional interfaces.")
+    }
+  }, [overlay])
 
   function openProject(id: ProjectId) {
-    setOverlay(id)
-    requestAnimationFrame(() => requestAnimationFrame(() => setOverlayVisible(true)))
+    navigate(projectToPath[id])
   }
 
   function closeProject() {
-    setOverlayVisible(false)
-    setTimeout(() => setOverlay(null), 420)
+    navigate('/')
   }
 
   return (
-    // RESPONSIVE: on mobile/tablet the page scrolls normally (content is taller
-    // than the viewport). On desktop (lg+) we keep the original fixed, exact-
-    // 100vh layout, since that design was built to fit the screen perfectly.
     <div className="relative min-h-screen overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
       <div className="relative lg:absolute lg:inset-0">
         <HomePage onOpenProject={openProject} isActive={!overlay} />
       </div>
 
-      {overlay && (
+      {renderedOverlay && (
         <div
           className="fixed inset-0"
           style={{
@@ -385,7 +419,7 @@ export default function App() {
             willChange: 'transform',
           }}
         >
-          <ProjectPage id={overlay} onClose={closeProject} />
+          <ProjectPage id={renderedOverlay} onClose={closeProject} />
         </div>
       )}
     </div>
