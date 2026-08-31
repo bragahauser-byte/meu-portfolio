@@ -135,6 +135,21 @@ function ViewCursor({ x, y, visible }: { x: number; y: number; visible: boolean 
   )
 }
 
+function HomePageCursor({ x, y, hidden }: { x: number; y: number; hidden: boolean }) {
+  if (hidden) return null
+  return (
+    <div
+      className="pointer-events-none fixed z-[9998]"
+      style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
+    >
+      <div
+        className="rounded-full bg-black"
+        style={{ width: 8, height: 8 }}
+      />
+    </div>
+  )
+}
+
 // ── Home page ─────────────────────────────────────────────────────────────────
 function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void }) {
   const [idx, setIdx] = useState(0)
@@ -160,7 +175,7 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
   return (
     // RESPONSIVE: below `lg` (1024px) we use a normal, stacked, scrollable layout.
     // At `lg` and above we switch to the original pixel-perfect desktop layout.
-    <div className="relative w-full min-h-full lg:h-full bg-white" onMouseMove={handleMouseMove}>
+    <div className="relative w-full min-h-full lg:h-full bg-white" onMouseMove={handleMouseMove} style={{ cursor: 'none' }}>
 
       {/* ── Mobile / tablet layout (< lg) ─────────────────────────────────── */}
       <div className="flex flex-col gap-8 p-6 pb-12 lg:hidden">
@@ -172,6 +187,7 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
         <div
           className="anim-image relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-[12px] overflow-hidden"
           onClick={() => onOpenProject(carouselItems[idx].project)}
+          style={{ cursor: 'none' }}
         >
           {carouselItems.map((item, i) => (
             <img
@@ -233,6 +249,7 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
       </div>
 
       <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />
+      <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} />
     </div>
   )
 }
