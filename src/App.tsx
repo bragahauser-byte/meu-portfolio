@@ -151,7 +151,7 @@ function HomePageCursor({ x, y, hidden }: { x: number; y: number; hidden: boolea
 }
 
 // ── Home page ─────────────────────────────────────────────────────────────────
-function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void }) {
+function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) => void; isActive: boolean }) {
   const [idx, setIdx] = useState(0)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
@@ -204,9 +204,9 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
         </div>
 
         <div className="anim-footer w-full max-w-[560px] flex flex-wrap justify-between items-center gap-x-6 gap-y-2" style={{ fontFeatureSettings: '"dlig" 1' }}>
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkClsMobile}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkClsMobile}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" className={linkClsMobile}>EMAIL</a>
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsMobile}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsMobile}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" style={{ cursor: 'none' }} className={linkClsMobile}>EMAIL</a>
         </div>
       </div>
 
@@ -242,14 +242,14 @@ function HomePage({ onOpenProject }: { onOpenProject: (id: ProjectId) => void })
           className="anim-footer absolute bottom-[40px] left-[40px] flex justify-between items-center"
           style={{ width: 'min(524px, calc(37.5% - 58px))', fontFeatureSettings: '"dlig" 1' }}
         >
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" className={linkClsDesktop}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" className={linkClsDesktop}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" className={linkClsDesktop}>EMAIL</a>
+          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsDesktop}>LINKEDIN</a>
+          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsDesktop}>MEDIUM</a>
+          <a href="mailto:bragahauser@gmail.com" style={{ cursor: 'none' }} className={linkClsDesktop}>EMAIL</a>
         </div>
       </div>
 
       <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />
-      <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} />
+      {isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} />}
     </div>
   )
 }
@@ -373,7 +373,7 @@ export default function App() {
     // 100vh layout, since that design was built to fit the screen perfectly.
     <div className="relative min-h-screen overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
       <div className="relative lg:absolute lg:inset-0">
-        <HomePage onOpenProject={openProject} />
+        <HomePage onOpenProject={openProject} isActive={!overlay} />
       </div>
 
       {overlay && (
