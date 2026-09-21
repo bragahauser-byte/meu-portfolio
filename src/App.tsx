@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import seo from './seo.json'
 
 // ── Home carousel images ──────────────────────────────────────────────────────
 import imgC0 from '@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png'
@@ -266,7 +267,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
   const [overLink, setOverLink] = useState(false)
-  const heroRef = useRef<HTMLParagraphElement>(null)
+  const heroRef = useRef<HTMLHeadingElement>(null)
   const { phase, lines } = useHomeEntrance(heroRef)
 
   useEffect(() => {
@@ -290,7 +291,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
       onMouseMove={handleMouseMove}
       style={{ cursor: 'none' }}
     >
-      <p
+      <h1
         ref={heroRef}
         className="type-hero m-0 max-w-[560px] select-none lg:absolute lg:top-[40px] lg:left-[40px] lg:max-w-none lg:w-[min(465px,calc(37.5%_-_62px))]"
       >
@@ -326,7 +327,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
             </span>
           </Fragment>
         ))}
-      </p>
+      </h1>
 
       <div
         className="panel relative w-full flex-1 min-h-[320px] rounded-[12px] overflow-hidden bg-[#0B0C10] lg:absolute lg:flex-none lg:min-h-0 lg:w-auto lg:top-[40px] lg:bottom-[40px] lg:left-[calc(37.5%_+_18px)] lg:right-[40px]"
@@ -368,6 +369,28 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
             style={{ cursor: 'none', '--i': i } as CSSProperties}
           >
             {l.label}
+          </a>
+        ))}
+      </nav>
+
+      <p className="sr-only">
+        Gabriel Braga (also written Gabriel Braga Hauser or Gabriel Braga Houser) is a Product Designer, UX Designer,
+        UI Designer, UX/UI Designer, UX Researcher, Interaction Designer, Visual Designer, Digital Designer and Graphic
+        Designer based in São Paulo, Brazil, currently at Work & Co. Background: Work & Co, Cherey, Beauty Express,
+        Alinea Hair and Digital Design at Universidade Anhembi Morumbi.
+      </p>
+      <nav className="sr-only" aria-label="Case studies">
+        {(Object.keys(projects) as ProjectId[]).map(id => (
+          <a
+            key={id}
+            href={seo.routes[id].path}
+            tabIndex={-1}
+            onClick={e => {
+              e.preventDefault()
+              onOpenProject(id)
+            }}
+          >
+            {projects[id].title} — {projects[id].subtitle}
           </a>
         ))}
       </nav>
@@ -536,15 +559,14 @@ const overlay = pathToProject[cleanPath] ?? null
   }, [overlay])
 
   useEffect(() => {
-    const meta = document.querySelector('meta[name="description"]')
-    if (overlay) {
-      const p = projects[overlay]
-      document.title = `${p.title} — UX/UI Case Study | Gabriel Braga`
-      if (meta) meta.setAttribute('content', `Case study de UX/UI Design: ${p.title}. ${p.subtitle}.`)
-    } else {
-      document.title = 'Gabriel Braga — Digital Designer'
-      if (meta) meta.setAttribute('content', "Hi! I'm Gabriel Braga, a designer at Work & Co, based in São Paulo.")
-    }
+    const page = overlay ? seo.routes[overlay] : seo.home
+    const url = seo.siteUrl + (overlay ? seo.routes[overlay].path : '/')
+    document.title = page.title
+    document.querySelector('meta[name="description"]')?.setAttribute('content', page.description)
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', page.title)
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content', page.description)
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', url)
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', url)
   }, [overlay])
 
   function openProject(id: ProjectId) {
