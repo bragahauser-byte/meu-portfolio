@@ -2,8 +2,11 @@
 # nao consegue servir arquivos armazenados via Git LFS.
 # Todos os arquivos agora sao tratados como blobs normais do Git.
 
-# Estatisticas de linguagem do GitHub (aba "Languages"): o projeto e um site
-# React/TSX gerado a partir do Figma; nao queremos TypeScript aparecendo como
-# linguagem do repositorio.
-*.ts linguist-detectable=false
-*.tsx linguist-detectable=false
+# Barra "Languages" do GitHub (so o rotulo do repositorio, nao afeta o site):
+# o codigo do site (.ts/.tsx) e contado como JavaScript, e HTML e os scripts de
+# shell do Figma (.figma/) ficam fora da conta, para JavaScript e CSS
+# aparecerem como as linguagens predominantes.
+*.ts linguist-language=JavaScript
+*.tsx linguist-language=JavaScript
+*.html linguist-detectable=false
+.figma/** linguist-vendored

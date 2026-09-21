@@ -7,16 +7,19 @@
   "routes": {
     "playstation": {
       "path": "/playstation-connect/",
+      "name": "PlayStation Connect",
       "title": "PlayStation Connect — UX/UI Case Study | Gabriel Braga",
       "description": "PlayStation Connect design study by Gabriel Braga, Product & UX/UI Designer: a native PC launcher concept bringing PlayStation games, account continuity and subscription to PC gamers."
     },
     "decolar": {
       "path": "/decolar/",
+      "name": "Decolar",
       "title": "Decolar — UX/UI Case Study | Gabriel Braga",
       "description": "Decolar design study by Gabriel Braga, Product & UX/UI Designer: a quiz-based flow that helps groups of friends align on a trip, with destination matches and a shared piggy bank."
     },
     "soundroom": {
       "path": "/sound-room/",
+      "name": "Soundroom",
       "title": "Soundroom — UX/UI Case Study | Gabriel Braga",
       "description": "Soundroom, a university UX/UI project by Gabriel Braga: a social platform to log listening sessions, write entries, create playlists and discover independent artists."
     }
