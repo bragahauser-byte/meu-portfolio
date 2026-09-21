@@ -31,6 +31,36 @@ function withMeta(html, { title, description, url }) {
   return out
 }
 
+// Structured data for a case-study page: what it is, who made it, where it sits.
+function routeJsonLd(route, url) {
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CreativeWork',
+        '@id': `${url}#case-study`,
+        url,
+        name: route.name,
+        headline: route.title,
+        description: route.description,
+        genre: 'UX/UI case study',
+        inLanguage: 'en',
+        author: { '@id': `${siteUrl}/#gabriel-braga` },
+        creator: { '@id': `${siteUrl}/#gabriel-braga` },
+        isPartOf: { '@id': `${siteUrl}/#website` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Gabriel Braga', item: `${siteUrl}/` },
+          { '@type': 'ListItem', position: 2, name: route.name, item: url },
+        ],
+      },
+    ],
+  }
+  return `<script type="application/ld+json">${JSON.stringify(graph)}</script>`
+}
+
 // Home
 writeFileSync(distIndex, withMeta(baseHtml, { ...seo.home, url: `${siteUrl}/` }))
 
@@ -39,7 +69,9 @@ const written = []
 for (const route of Object.values(seo.routes)) {
   const dir = route.path.replace(/^\/|\/$/g, '')
   mkdirSync(join('dist', dir), { recursive: true })
-  writeFileSync(join('dist', dir, 'index.html'), withMeta(baseHtml, { ...route, url: `${siteUrl}${route.path}` }))
+  const url = `${siteUrl}${route.path}`
+  const page = withMeta(baseHtml, { ...route, url }).replace('</head>', () => `  ${routeJsonLd(route, url)}\n  </head>`)
+  writeFileSync(join('dist', dir, 'index.html'), page)
   written.push(dir)
 }
 

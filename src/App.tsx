@@ -379,6 +379,11 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
         Designer based in São Paulo, Brazil, currently at Work & Co. Background: Work & Co, Cherey, Beauty Express,
         Alinea Hair and Digital Design at Universidade Anhembi Morumbi.
       </p>
+      <p className="sr-only" lang="pt-BR">
+        Gabriel Braga (Gabriel Braga Hauser / Houser) é Designer de Produto, Designer UX, Designer UI, Designer UX/UI,
+        UX Researcher, Designer de Interação, Designer Visual, Designer Digital e Designer Gráfico em São Paulo,
+        atualmente na Work & Co.
+      </p>
       <nav className="sr-only" aria-label="Case studies">
         {(Object.keys(projects) as ProjectId[]).map(id => (
           <a
