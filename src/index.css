@@ -1,16 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 
-@theme {
-  --font-sans: 'Plus Jakarta Sans', sans-serif;
-}
-
+/* ── PP Neue Montreal ──────────────────────────────────────────────────────── */
 @font-face {
-  font-family: 'PP Neue Montreal:Book';
-  src: local('Plus Jakarta Sans'), local('PlusJakartaSans-Regular'), sans-serif;
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-book.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-semibolditalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 *, *::before, *::after {
@@ -21,44 +56,139 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Page entrance choreography ─────────────────────────────────────────────
-   text → image → footer, overlapping, ease-out, ~730ms total.
-   `both` fill-mode: element sits in the "from" state during its delay
-   (backwards) and holds the "to" state once finished (forwards). */
-@keyframes enter-text {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes enter-image {
-  from { opacity: 0; transform: translateY(18px) scale(0.985); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes enter-footer {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+:root {
+  /* Entradas: ease-out (Material 3 "emphasized decelerate") */
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  /* Saídas (transições futuras de página): "emphasized accelerate" */
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  /* Micro-interações e movimentos dentro da tela */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Deslocamentos da entrada (mobile usa valores menores, ver media query) */
+  --dy-hero: 16px;
+  --dy-media: 24px;
+  --dy-footer: 8px;
+
+  --link-hover: #DB224D;
 }
 
-.anim-text {
-  animation: enter-text 480ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
-}
-.anim-image {
-  animation: enter-image 650ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
-}
-.anim-footer {
-  animation: enter-footer 350ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
-}
-
-/* Accessibility: respect reduced-motion preference — content appears
-   instantly, in its final position, with no movement or fade-in delay. */
-@media (prefers-reduced-motion: reduce) {
-  .anim-text,
-  .anim-image,
-  .anim-footer {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
+@media (max-width: 1023px) {
+  :root {
+    --dy-hero: 12px;
+    --dy-media: 16px;
+    --dy-footer: 6px;
   }
+}
+
+/* ── Link hover: cor + linha crescendo por baixo do texto ─────────────────────
+   Padrão único do rodapé e do "Work & Co" no hero. A linha é um ::after
+   animado só com transform (scaleX), 150ms. */
+.link-underline {
+  position: relative;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+  transition: color 150ms var(--ease-standard);
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--u-bottom, 0);
+  height: var(--u-height, 1.5px);
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 150ms var(--ease-standard);
+}
+@media (hover: hover) {
+  .link-underline:hover { color: var(--link-hover); }
+  .link-underline:hover::after { transform: scaleX(1); }
+}
+.link-underline:focus-visible {
+  color: var(--link-hover);
+  outline: none;
+}
+.link-underline:focus-visible::after { transform: scaleX(1); }
+
+/* ── Entrada da Home ──────────────────────────────────────────────────────────
+   hierarquia manda a ordem: quem sou → trabalho → contatos.
+   Nada entra de longe: deslocamento curto + fade, sempre ease-out.
+   Só transform e opacity. Os @keyframes definem apenas o estado inicial
+   (`from`); o estado final é o próprio layout, e fill-mode `both` garante
+   que o conteúdo fique visível quando a animação termina ou é desativada.
+
+   data-enter no .home:
+     wait → fonte/imagem ainda carregando (elementos ficam em opacity 0)
+     run  → sequência completa (primeira visita da sessão)
+     fast → só um fade curto (visitas seguintes na mesma sessão)          */
+@keyframes hero-in   { from { opacity: 0; transform: translateY(var(--dy-hero)); } }
+@keyframes panel-in  { from { opacity: 0; transform: scale(0.98); } }
+@keyframes media-in  { from { opacity: 0; transform: translateY(var(--dy-media)) scale(0.97); } }
+@keyframes footer-in { from { opacity: 0; transform: translateY(var(--dy-footer)); } }
+@keyframes fade-in   { from { opacity: 0; } }
+
+.home[data-enter='wait'] :is(.hero-word, .panel, .panel-media, .footer-link) {
+  opacity: 0;
+}
+
+/* 1. Hero — 0ms, linha a linha (stagger 60ms), 500ms */
+.home[data-enter='run'] .hero-word {
+  animation: hero-in 500ms var(--ease-enter) calc(var(--i, 0) * 60ms) both;
+}
+/* 2. Painel — 100ms, sobrepõe o hero, 700ms */
+.home[data-enter='run'] .panel {
+  transform-origin: center;
+  animation: panel-in 700ms var(--ease-enter) 100ms both;
+}
+/* 3. Imagem dentro do painel — 350ms (pai → filho), 700ms */
+.home[data-enter='run'] .panel-media {
+  animation: media-in 700ms var(--ease-enter) 350ms both;
+}
+/* 4. Rodapé — 600ms, por último e mais discreto, stagger 60ms, 400ms */
+.home[data-enter='run'] .footer-link {
+  animation: footer-in 400ms var(--ease-enter) calc(600ms + var(--i, 0) * 60ms) both;
+}
+
+/* Visitas seguintes: fade curto, sem deslocamento */
+.home[data-enter='fast'] :is(.hero-word, .panel, .panel-media, .footer-link) {
+  animation: fade-in 200ms linear both;
+}
+
+/* Acessibilidade: sem movimento (nem translate nem scale), só fade simples de
+   300ms, sem delays, linear. Reduzir movimento não esconde conteúdo. */
+@media (prefers-reduced-motion: reduce) {
+  .home[data-enter] :is(.hero-word, .panel, .panel-media, .footer-link) {
+    animation: fade-in 300ms linear 0ms both !important;
+  }
+  .link-underline,
+  .link-underline::after {
+    transition-duration: 0ms;
+  }
+}
+
+/* ── Escala tipográfica (PP Neue Montreal) ────────────────────────────────────
+   Valores do Figma no frame de 1920px: hero 32/40, título 28/32, corpo 24/32,
+   rodapé 24/20 (tracking -0.04em). Abaixo de 1920px escala de forma fluida
+   (vw) com piso legível; em mobile/tablet usa tamanhos próprios. */
+.type-hero   { font-size: 26px; line-height: 32px; letter-spacing: 0.001em; }
+.type-title  { font-size: 20px; line-height: 24px; letter-spacing: 0.001em; }
+.type-body   { font-size: 16px; line-height: 24px; letter-spacing: 0.001em; }
+.type-footer { font-size: 18px; line-height: 20px; letter-spacing: -0.04em; }
+
+@media (min-width: 768px) {
+  .type-hero { font-size: 32px; line-height: 40px; }
+}
+@media (min-width: 1024px) {
+  .type-hero   { font-size: clamp(22px, 1.6667vw, 32px); line-height: 1.25; }
+  .type-title  { font-size: clamp(20px, 1.4583vw, 28px); line-height: 1.1429; }
+  .type-body   { font-size: clamp(16px, 1.25vw, 24px);   line-height: 1.3333; }
+  .type-footer { font-size: clamp(16px, 1.25vw, 24px);   line-height: 0.8333; }
 }
