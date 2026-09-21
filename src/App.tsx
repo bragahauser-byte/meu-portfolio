@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 // ── Home carousel images ──────────────────────────────────────────────────────
@@ -42,15 +43,18 @@ import imgSnd6 from '@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256
 // ── Types & data ──────────────────────────────────────────────────────────────
 type ProjectId = 'playstation' | 'decolar' | 'soundroom'
 
-const carouselItems: { img: string; project: ProjectId }[] = [
-  { img: imgC0, project: 'playstation' },
+// "bg" marks a mockup slide with a flat background: below lg the panel is tall
+// and narrow, so these are shown whole (object-contain, blending into bg)
+// instead of being cropped to their middle. Full-bleed photos have no bg.
+const carouselItems: { img: string; project: ProjectId; bg?: string }[] = [
+  { img: imgC0, project: 'playstation', bg: '#0B0C10' },
   { img: imgC1, project: 'playstation' },
-  { img: imgC2, project: 'decolar' },
+  { img: imgC2, project: 'decolar', bg: '#F4F5F0' },
   { img: imgC3, project: 'decolar' },
-  { img: imgC4, project: 'decolar' },
-  { img: imgC5, project: 'soundroom' },
-  { img: imgC6, project: 'soundroom' },
-  { img: imgC7, project: 'soundroom' },
+  { img: imgC4, project: 'decolar', bg: '#F4F5F0' },
+  { img: imgC5, project: 'soundroom', bg: '#0B0C10' },
+  { img: imgC6, project: 'soundroom', bg: '#0B0C10' },
+  { img: imgC7, project: 'soundroom', bg: '#0B0C10' },
 ]
 
 const psText = [
@@ -136,7 +140,7 @@ function ViewCursor({ x, y, visible }: { x: number; y: number; visible: boolean 
   )
 }
 
-function HomePageCursor({ x, y, hidden }: { x: number; y: number; hidden: boolean }) {
+function HomePageCursor({ x, y, hidden, overLink }: { x: number; y: number; hidden: boolean; overLink: boolean }) {
   if (hidden) return null
   return (
     <div
@@ -144,20 +148,127 @@ function HomePageCursor({ x, y, hidden }: { x: number; y: number; hidden: boolea
       style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
     >
       <div
-        className="rounded-full bg-black"
-        style={{ width: 8, height: 8 }}
+        className="rounded-full"
+        style={{
+          width: 8,
+          height: 8,
+          // same color + timing as the link hover, so dot and text change together
+          backgroundColor: overLink ? "var(--link-hover)" : "#000",
+          transition: "background-color 150ms var(--ease-standard)",
+        }}
       />
     </div>
   )
 }
 
 // ── Home page ─────────────────────────────────────────────────────────────────
+type HeroWord = { text: string; tone: 'dark' | 'gray'; href?: string; after?: string }
+
+// Words (not lines) are the animated unit: after fonts load we measure which
+// visual line each word landed on and stagger by line. "Work & Co" is a single
+// unbreakable unit and carries its trailing comma outside the link.
+const heroWords: HeroWord[] = [
+  { text: 'Hi!', tone: 'dark' },
+  { text: "I'm", tone: 'dark' },
+  { text: 'Gabriel', tone: 'dark' },
+  { text: 'Braga,', tone: 'dark' },
+  { text: 'a', tone: 'gray' },
+  { text: 'designer', tone: 'gray' },
+  { text: 'at', tone: 'gray' },
+  { text: 'Work & Co', tone: 'gray', href: 'https://www.work.co/', after: ',' },
+  { text: 'based', tone: 'gray' },
+  { text: 'in', tone: 'gray' },
+  { text: 'São', tone: 'gray' },
+  { text: 'Paulo.', tone: 'gray' },
+]
+
+const footerLinks = [
+  { label: 'LINKEDIN', href: 'https://www.linkedin.com/in/gabriel-bragaa/' },
+  { label: 'MEDIUM', href: 'https://medium.com/@bragahauser' },
+  { label: 'GITHUB', href: 'https://github.com/bragahauser-byte' },
+]
+
+type EnterPhase = 'wait' | 'run' | 'fast'
+
+const ENTERED_KEY = 'portfolio:home-entered'
+// Safety net: never keep the page hidden longer than this waiting on assets.
+const ENTER_GATE_TIMEOUT_MS = 1000
+
+function hasEnteredThisSession() {
+  try {
+    return sessionStorage.getItem(ENTERED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markEnteredThisSession() {
+  try {
+    sessionStorage.setItem(ENTERED_KEY, '1')
+  } catch {
+    /* storage unavailable — animation just replays next visit */
+  }
+}
+
+// Index of the visual line each hero word sits on (0, 1, 2…).
+function measureHeroLines(root: HTMLElement | null): number[] {
+  if (!root) return []
+  let line = -1
+  let lastTop = Number.NaN
+  return Array.from(root.querySelectorAll<HTMLElement>('.hero-word')).map(el => {
+    if (el.offsetTop !== lastTop) {
+      lastTop = el.offsetTop
+      line++
+    }
+    return line
+  })
+}
+
+// Holds the Home in its hidden "from" state until the font and the first
+// panel image are ready (or ~1s passes), so the panel never animates empty and
+// the image never "jumps" in afterwards. Full sequence plays once per session.
+function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
+  const [phase, setPhase] = useState<EnterPhase>('wait')
+  const [lines, setLines] = useState<number[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    const seen = hasEnteredThisSession()
+
+    const fontReady = Promise.all([
+      document.fonts?.load('400 32px "PP Neue Montreal"'),
+      document.fonts?.ready,
+    ]).catch(() => undefined)
+
+    const firstImage = new Image()
+    firstImage.src = carouselItems[0].img
+    const imageReady = firstImage.decode().catch(() => undefined)
+
+    const timeout = new Promise<void>(resolve => setTimeout(resolve, ENTER_GATE_TIMEOUT_MS))
+
+    Promise.race([Promise.all([fontReady, imageReady]), timeout]).then(() => {
+      if (cancelled) return
+      setLines(measureHeroLines(heroRef.current))
+      setPhase(seen ? 'fast' : 'run')
+      markEnteredThisSession()
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [heroRef])
+
+  return { phase, lines }
+}
+
 function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) => void; isActive: boolean }) {
   const [idx, setIdx] = useState(0)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
+  const [overLink, setOverLink] = useState(false)
+  const heroRef = useRef<HTMLParagraphElement>(null)
+  const { phase, lines } = useHomeEntrance(heroRef)
 
-  // FIX 1: preload carousel images by mounting them all; only first is eager
   useEffect(() => {
     const t = setInterval(() => setIdx(i => (i + 1) % carouselItems.length), 3500)
     return () => clearInterval(t)
@@ -165,31 +276,68 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setCursor({ x: e.clientX, y: e.clientY })
+    setOverLink(!!(e.target as Element).closest('a'))
   }, [])
 
-  // Uppercase text always *reads* larger than mixed-case at the same px size,
-  // so the links are set a notch below the title's size to look visually
-  // equal — not literally equal. Same 3:4 ratio kept at both breakpoints.
-  const linkClsDesktop = "text-[16px] leading-[24px] font-medium tracking-[0.06em] uppercase text-[#000000] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
-  const linkClsMobile = "text-[12px] leading-[16px] font-medium tracking-[0.08em] uppercase text-[#000000] no-underline transition-colors duration-150 hover:text-[#DB224D] hover:underline"
-
   return (
-    // RESPONSIVE: below `lg` (1024px) we use a normal, stacked, scrollable layout.
-    // At `lg` and above we switch to the original pixel-perfect desktop layout.
-    <div className="relative w-full min-h-full lg:h-full bg-white" onMouseMove={handleMouseMove} style={{ cursor: 'none' }}>
+    // One responsive layout. Below `lg` (1024px) it is a stacked, scrollable
+    // column (hero → panel → footer). From `lg` up the children are placed
+    // absolutely to match the 1920×1080 design: 40px margins, panel starting
+    // at 738px, footer aligned to the panel's bottom edge.
+    <div
+      className="home relative flex flex-col gap-6 w-full min-h-[100svh] p-6 bg-white md:gap-10 md:p-10 lg:block lg:min-h-0 lg:h-full lg:gap-0 lg:p-0"
+      data-enter={phase}
+      onMouseMove={handleMouseMove}
+      style={{ cursor: 'none' }}
+    >
+      <p
+        ref={heroRef}
+        className="type-hero m-0 max-w-[560px] select-none lg:absolute lg:top-[40px] lg:left-[40px] lg:max-w-none lg:w-[min(465px,calc(37.5%_-_62px))]"
+      >
+        {heroWords.map((w, i) => (
+          <Fragment key={i}>
+            {i > 0 && ' '}
+            <span
+              className="hero-word inline-block whitespace-nowrap"
+              style={
+                {
+                  // gray copy trails the dark copy by half a step
+                  '--i': (lines[i] ?? 0) + (w.tone === 'gray' ? 0.5 : 0),
+                  color: w.tone === 'gray' ? '#747474' : '#1A1A1A',
+                } as CSSProperties
+              }
+            >
+              {w.href ? (
+                <>
+                  <a
+                    href={w.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="link-underline"
+                    style={{ cursor: 'none', '--u-bottom': '0.06em' } as CSSProperties}
+                  >
+                    {w.text}
+                  </a>
+                  {w.after}
+                </>
+              ) : (
+                w.text
+              )}
+            </span>
+          </Fragment>
+        ))}
+      </p>
 
-      {/* ── Mobile / tablet layout (< lg) ─────────────────────────────────── */}
-      <div className="flex flex-col gap-8 p-6 pb-12 lg:hidden">
-        <p className="anim-text max-w-[560px] text-[16px] leading-[24px] text-[#000000] tracking-[-0.01em] [word-break:break-word] m-0 select-none">
-          <span className="font-medium">{"Hi, I'm Gabriel Braga, "}</span>
-          <span className="font-normal text-[#707070]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
-        </p>
-
-        <div
-          className="anim-image relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-[12px] overflow-hidden"
-          onClick={() => onOpenProject(carouselItems[idx].project)}
-          style={{ cursor: 'none' }}
-        >
+      <div
+        className="panel relative w-full flex-1 min-h-[320px] rounded-[12px] overflow-hidden bg-[#0B0C10] lg:absolute lg:flex-none lg:min-h-0 lg:w-auto lg:top-[40px] lg:bottom-[40px] lg:left-[calc(37.5%_+_18px)] lg:right-[40px]"
+        style={{ cursor: 'none' }}
+        onMouseEnter={() => setViewCursorVisible(true)}
+        onMouseLeave={() => setViewCursorVisible(false)}
+        onClick={() => onOpenProject(carouselItems[idx].project)}
+      >
+        {/* Wrapper carries the entrance animation so the per-image opacity
+            cross-fade (inline style) is left untouched. */}
+        <div className="panel-media absolute inset-0">
           {carouselItems.map((item, i) => (
             <img
               key={i}
@@ -198,67 +346,68 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
               loading={i === 0 ? 'eager' : 'lazy'}
               decoding="async"
               fetchPriority={i === 0 ? 'high' : 'low'}
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease' }}
+              className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none ${item.bg ? 'max-lg:object-contain' : ''}`}
+              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease', backgroundColor: item.bg }}
             />
           ))}
         </div>
-
-        <div className="anim-footer w-full max-w-[560px] flex flex-wrap justify-between items-center gap-x-6 gap-y-2" style={{ fontFeatureSettings: '"dlig" 1' }}>
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsMobile}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsMobile}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" style={{ cursor: 'none' }} className={linkClsMobile}>EMAIL</a>
-        </div>
       </div>
 
-      {/* ── Desktop layout (>= lg) — original pixel-perfect design ────────── */}
-      <div className="hidden lg:block absolute inset-0">
-        <p className="anim-text absolute top-[40px] left-[40px] max-w-[524px] text-[24px] leading-[32px] text-[#000000] tracking-[-0.01em] [word-break:break-word] m-0 select-none">
-          <span className="font-medium">{"Hi, I'm Gabriel Braga, "}</span>
-          <span className="font-normal text-[#707070]">{"a digital designer from São Paulo who likes turning ideas into clear, functional interfaces :)"}</span>
-        </p>
-
-        <div
-          className="anim-image absolute top-[40px] bottom-[40px] rounded-[12px] overflow-hidden"
-          style={{ left: 'calc(37.5% + 18px)', right: '40px', cursor: 'none' }}
-          onMouseEnter={() => setViewCursorVisible(true)}
-          onMouseLeave={() => setViewCursorVisible(false)}
-          onClick={() => onOpenProject(carouselItems[idx].project)}
-        >
-          {carouselItems.map((item, i) => (
-            <img
-              key={i}
-              src={item.img}
-              alt=""
-              loading={i === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-              fetchPriority={i === 0 ? 'high' : 'low'}
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease' }}
-            />
-          ))}
-        </div>
-
-        <div
-          className="anim-footer absolute bottom-[40px] left-[40px] flex justify-between items-center"
-          style={{ width: 'min(524px, calc(37.5% - 58px))', fontFeatureSettings: '"dlig" 1' }}
-        >
-          <a href="https://www.linkedin.com/in/gabriel-bragaa/" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsDesktop}>LINKEDIN</a>
-          <a href="https://medium.com/@bragahauser" target="_blank" rel="noreferrer" style={{ cursor: 'none' }} className={linkClsDesktop}>MEDIUM</a>
-          <a href="mailto:bragahauser@gmail.com" style={{ cursor: 'none' }} className={linkClsDesktop}>EMAIL</a>
-        </div>
-      </div>
+      <nav
+        aria-label="Links externos"
+        className="footer type-footer flex flex-wrap gap-x-[2.5em] gap-y-2 text-[#1A1A1A] md:gap-x-[4.0833em] lg:absolute lg:bottom-[41px] lg:left-[40px] lg:flex-nowrap"
+        style={{ '--u-bottom': '-0.1em' } as CSSProperties}
+      >
+        {footerLinks.map((l, i) => (
+          <a
+            key={l.label}
+            href={l.href}
+            target="_blank"
+            rel="noreferrer"
+            className="footer-link link-underline"
+            style={{ cursor: 'none', '--i': i } as CSSProperties}
+          >
+            {l.label}
+          </a>
+        ))}
+      </nav>
 
       <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />
-      {isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} />}
+      {isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} overLink={overLink} />}
     </div>
   )
 }
 
 // ── Project page ──────────────────────────────────────────────────────────────
+// The desktop text block is sticky. Once it is taller than the viewport a plain
+// `top: 40px` would cut off its end, so the stick point moves up: the block
+// scrolls until its bottom is 40px above the viewport bottom, then holds there
+// while the images keep scrolling. Short blocks behave exactly as before.
+function useStickyTop(ref: RefObject<HTMLElement | null>, margin = 40) {
+  const [top, setTop] = useState(margin)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setTop(Math.min(margin, window.innerHeight - el.offsetHeight - margin))
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    window.addEventListener('resize', update)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [ref, margin])
+
+  return top
+}
+
 function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
   const [cursor, setCursor] = useState({ x: -100, y: -100 })
   const project = projects[id]
+  const textBlockRef = useRef<HTMLDivElement>(null)
+  const stickyTop = useStickyTop(textBlockRef)
 
   return (
     // fixed inset-0 so the overlay always covers the full viewport, regardless
@@ -270,14 +419,14 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
       onClick={onClose}
     >
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
-      <div className="flex flex-col gap-10 p-6 pb-16 lg:hidden">
+      <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
         <div>
-          <p className="text-[16px] leading-[24px] font-medium text-[#000000] tracking-[-0.01em] m-0">{project.title}</p>
-          <p className="text-[16px] leading-[24px] font-normal text-[#707070] tracking-[-0.01em] m-0">{project.subtitle}</p>
+          <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
+          <p className="type-title m-0 text-[#747474]">{project.subtitle}</p>
         </div>
         <div className="flex flex-col gap-[24px]">
           {project.paragraphs.map((p, i) => (
-            <p key={i} className="text-[16px] leading-[24px] text-[#000000] text-justify tracking-normal [word-break:break-word] m-0">{p}</p>
+            <p key={i} className="type-body m-0 text-justify text-[#333333] [word-break:break-word]">{p}</p>
           ))}
         </div>
         <div className="flex flex-col gap-[20px]">
@@ -295,7 +444,7 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
         </div>
       </div>
 
-      {/* ── Desktop layout (>= lg) — original two-column sticky design ───── */}
+      {/* ── Desktop layout (>= lg) — two-column sticky design ────────────── */}
       {/* No `items-start` here: the row keeps the default `stretch`, so the
           Left column's box grows to match the Right column's full height.
           That gives the sticky text room to stick — and, combined with the
@@ -303,37 +452,38 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
           the bottom instead of leaving blank space once the text runs out. */}
       <div className="hidden lg:flex" style={{ paddingTop: 40, paddingBottom: 40 }}>
 
-        {/* Left: text column — sticky, stops 40px before the column ends */}
+        {/* Left: text column — 40px gutters, image column starts at 37.5% + 18px */}
         <div
           style={{
             flexShrink: 0,
-            width: 'calc(37.5% - 18px)',
+            width: 'calc(37.5% + 18px)',
             paddingLeft: 40,
             paddingRight: 40,
             paddingBottom: 40,
           }}
         >
-          <div style={{ position: 'sticky', top: 40 }}>
-            <div style={{ marginBottom: 72 }}>
-              <p className="text-[24px] leading-[32px] font-medium text-[#000000] tracking-[-0.01em] m-0">{project.title}</p>
-              <p className="text-[24px] leading-[32px] font-normal text-[#707070] tracking-[-0.01em] m-0">{project.subtitle}</p>
+          <div ref={textBlockRef} style={{ position: 'sticky', top: stickyTop }}>
+            <div style={{ marginBottom: 'min(198px, 18.33vh)' }}>
+              <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
+              <p className="type-title m-0 text-[#747474]">{project.subtitle}</p>
             </div>
-            <div className="flex flex-col gap-[24px]">
+            <div className="flex flex-col" style={{ gap: 'clamp(24px, 1.6667vw, 32px)' }}>
               {project.paragraphs.map((p, i) => (
-                <p key={i} className="text-[16px] leading-[24px] text-[#000000] text-justify tracking-normal [word-break:break-word] m-0">{p}</p>
+                <p key={i} className="type-body m-0 text-justify text-[#333333] [word-break:break-word]">{p}</p>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Right: image catalog — natural flow, scrolls with the single scroll */}
+        {/* Right: image catalog — natural flow, scrolls with the single scroll.
+            Each image fills the viewport minus the 40px top/bottom margins. */}
         <div style={{ flex: 1, paddingRight: 40 }}>
           <div className="flex flex-col gap-[40px]">
             {project.images.map((img, i) => (
               <div
                 key={i}
                 className="relative w-full rounded-[12px] overflow-hidden"
-                style={{ height: '85vh' }}
+                style={{ height: 'calc(100vh - 80px)' }}
               >
                 <img
                   src={img}
@@ -368,7 +518,8 @@ const projectToPath: Record<ProjectId, string> = {
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const overlay = pathToProject[location.pathname] ?? null
+  const cleanPath = location.pathname.replace(/\/$/, '') || '/'
+const overlay = pathToProject[cleanPath] ?? null
 
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
@@ -392,7 +543,7 @@ export default function App() {
       if (meta) meta.setAttribute('content', `Case study de UX/UI Design: ${p.title}. ${p.subtitle}.`)
     } else {
       document.title = 'Gabriel Braga — Digital Designer'
-      if (meta) meta.setAttribute('content', "Hi, I'm Gabriel Braga, a digital designer from São Paulo who likes turning ideas into clear, functional interfaces.")
+      if (meta) meta.setAttribute('content', "Hi! I'm Gabriel Braga, a designer at Work & Co, based in São Paulo.")
     }
   }, [overlay])
 
@@ -405,7 +556,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
+    <div className="relative min-h-[100svh] overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
       <div className="relative lg:absolute lg:inset-0">
         <HomePage onOpenProject={openProject} isActive={!overlay} />
       </div>
