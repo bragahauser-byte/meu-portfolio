@@ -162,6 +162,26 @@ function HomePageCursor({ x, y, hidden, overLink }: { x: number; y: number; hidd
   )
 }
 
+// Custom fixed-position cursors (ViewCursor, CloseCursor, HomePageCursor) only
+// make sense on pointer devices with real hover: on touch, there is no
+// mouseleave when a finger lifts, so they would stay stuck floating at the
+// last tap position. Callers gate rendering on this and fall back to the
+// browser's normal cursor.
+function useHasHover() {
+  const query = '(hover: hover) and (pointer: fine)'
+  const [hasHover, setHasHover] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const update = () => setHasHover(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  return hasHover
+}
+
 // ── Home page ─────────────────────────────────────────────────────────────────
 type HeroWord = { text: string; tone: 'dark' | 'gray'; href?: string; after?: string }
 
@@ -269,6 +289,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
   const [overLink, setOverLink] = useState(false)
   const heroRef = useRef<HTMLHeadingElement>(null)
   const { phase, lines } = useHomeEntrance(heroRef)
+  const hasHover = useHasHover()
 
   useEffect(() => {
     const t = setInterval(() => setIdx(i => (i + 1) % carouselItems.length), 3500)
@@ -286,14 +307,14 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
     // absolutely to match the 1920×1080 design: 40px margins, panel starting
     // at 738px, footer aligned to the panel's bottom edge.
     <div
-      className="home relative flex flex-col gap-6 w-full min-h-[100svh] p-6 bg-white md:gap-10 md:p-10 lg:block lg:min-h-0 lg:h-full lg:gap-0 lg:p-0"
+      className="home relative flex flex-col items-center justify-center gap-[127px] w-full min-h-[100svh] p-0 bg-white md:items-stretch md:justify-start md:gap-10 md:p-10 lg:block lg:min-h-0 lg:h-full lg:gap-0 lg:p-0"
       data-enter={phase}
       onMouseMove={handleMouseMove}
-      style={{ cursor: 'none' }}
+      style={{ cursor: hasHover ? 'none' : 'auto' }}
     >
       <h1
         ref={heroRef}
-        className="type-hero m-0 max-w-[560px] select-none lg:absolute lg:top-[40px] lg:left-[40px] lg:max-w-none lg:w-[min(465px,calc(37.5%_-_62px))]"
+        className="type-hero m-0 w-full pt-16 px-4 select-none md:w-auto md:max-w-[560px] md:pt-0 md:px-0 lg:absolute lg:top-[40px] lg:left-[40px] lg:max-w-none lg:w-[min(465px,calc(37.5%_-_62px))]"
       >
         {heroWords.map((w, i) => (
           <Fragment key={i}>
@@ -315,7 +336,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
                     target="_blank"
                     rel="noreferrer"
                     className="link-underline"
-                    style={{ cursor: 'none', '--u-bottom': '0.06em' } as CSSProperties}
+                    style={{ cursor: hasHover ? 'none' : 'auto', '--u-bottom': '0.06em' } as CSSProperties}
                   >
                     {w.text}
                   </a>
@@ -330,9 +351,12 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
       </h1>
 
       <div
-        className="panel relative w-full flex-1 min-h-[320px] rounded-[12px] overflow-hidden bg-[#0B0C10] lg:absolute lg:flex-none lg:min-h-0 lg:w-auto lg:top-[40px] lg:bottom-[40px] lg:left-[calc(37.5%_+_18px)] lg:right-[40px]"
-        style={{ cursor: 'none' }}
-        onMouseEnter={() => setViewCursorVisible(true)}
+        className="w-full px-4 md:w-auto md:flex-1 md:px-0 lg:contents"
+      >
+      <div
+        className="panel relative w-full h-[391px] rounded-[12px] overflow-hidden bg-[#0B0C10] md:h-full md:min-h-[320px] lg:absolute lg:min-h-0 lg:w-auto lg:h-auto lg:top-[40px] lg:bottom-[40px] lg:left-[calc(37.5%_+_18px)] lg:right-[40px]"
+        style={{ cursor: hasHover ? 'none' : 'pointer' }}
+        onMouseEnter={() => hasHover && setViewCursorVisible(true)}
         onMouseLeave={() => setViewCursorVisible(false)}
         onClick={() => onOpenProject(carouselItems[idx].project)}
       >
@@ -353,10 +377,11 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
           ))}
         </div>
       </div>
+      </div>
 
       <nav
         aria-label="Links externos"
-        className="footer type-footer flex flex-wrap gap-x-[2.5em] gap-y-2 text-[#1A1A1A] md:gap-x-[4.0833em] lg:absolute lg:bottom-[41px] lg:left-[40px] lg:flex-nowrap"
+        className="footer type-footer flex flex-nowrap gap-[73px] px-4 pb-10 text-[#1A1A1A] md:flex-wrap md:gap-x-[2.5em] md:gap-y-2 md:px-0 md:pb-0 lg:gap-x-[4.0833em] lg:absolute lg:bottom-[41px] lg:left-[40px] lg:flex-nowrap"
         style={{ '--u-bottom': '-0.1em' } as CSSProperties}
       >
         {footerLinks.map((l, i) => (
@@ -366,7 +391,7 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
             target="_blank"
             rel="noreferrer"
             className="footer-link link-underline"
-            style={{ cursor: 'none', '--i': i } as CSSProperties}
+            style={{ cursor: hasHover ? 'none' : 'auto', '--i': i } as CSSProperties}
           >
             {l.label}
           </a>
@@ -400,8 +425,8 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
         ))}
       </nav>
 
-      <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />
-      {isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} overLink={overLink} />}
+      {hasHover && <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />}
+      {hasHover && isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} overLink={overLink} />}
     </div>
   )
 }
@@ -436,13 +461,14 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
   const project = projects[id]
   const textBlockRef = useRef<HTMLDivElement>(null)
   const stickyTop = useStickyTop(textBlockRef)
+  const hasHover = useHasHover()
 
   return (
     // fixed inset-0 so the overlay always covers the full viewport, regardless
     // of whatever scroll position the Home page (behind it) is at.
     <div
       className="fixed inset-0 overflow-y-auto bg-white"
-      style={{ cursor: 'none' }}
+      style={{ cursor: hasHover ? 'none' : 'auto' }}
       onMouseMove={e => setCursor({ x: e.clientX, y: e.clientY })}
       onClick={onClose}
     >
@@ -526,7 +552,7 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
         </div>
       </div>
 
-      <CloseCursor x={cursor.x} y={cursor.y} />
+      {hasHover && <CloseCursor x={cursor.x} y={cursor.y} />}
     </div>
   )
 }

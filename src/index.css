@@ -178,10 +178,10 @@ html, body, #root {
    Valores do Figma no frame de 1920px: hero 32/40, título 28/32, corpo 24/32,
    rodapé 24/20 (tracking -0.04em). Abaixo de 1920px escala de forma fluida
    (vw) com piso legível; em mobile/tablet usa tamanhos próprios. */
-.type-hero   { font-size: 26px; line-height: 32px; letter-spacing: 0.001em; }
+.type-hero   { font-size: 24px; line-height: 29px; letter-spacing: 0.001em; }
 .type-title  { font-size: 20px; line-height: 24px; letter-spacing: 0.001em; }
 .type-body   { font-size: 16px; line-height: 24px; letter-spacing: 0.001em; }
-.type-footer { font-size: 18px; line-height: 20px; letter-spacing: -0.04em; }
+.type-footer { font-size: 20px; line-height: 20px; letter-spacing: -0.04em; }
 
 @media (min-width: 768px) {
   .type-hero { font-size: 32px; line-height: 40px; }
