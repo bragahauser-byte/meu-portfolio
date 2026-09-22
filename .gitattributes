@@ -3,10 +3,8 @@
 # Todos os arquivos agora sao tratados como blobs normais do Git.
 
 # Barra "Languages" do GitHub (so o rotulo do repositorio, nao afeta o site):
-# o codigo do site (.ts/.tsx) e contado como JavaScript, e HTML e os scripts de
-# shell do Figma (.figma/) ficam fora da conta, para JavaScript e CSS
-# aparecerem como as linguagens predominantes.
+# o codigo do site (.ts/.tsx) e contado como JavaScript, e os scripts de
+# shell do Figma (.figma/) ficam fora da conta.
 *.ts linguist-language=JavaScript
 *.tsx linguist-language=JavaScript
-*.html linguist-detectable=false
 .figma/** linguist-vendored
