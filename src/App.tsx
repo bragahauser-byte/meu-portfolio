@@ -1,61 +1,69 @@
-import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import type { CSSProperties, RefObject } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import seo from './seo.json'
+import {
+  Fragment,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react"
+import type { CSSProperties, RefObject } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import seo from "./seo.json"
 
 // ── Home carousel images ──────────────────────────────────────────────────────
-import imgC0 from '@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png'
-import imgC1 from '@/imports/Home/4b5167c4a83880a558c5b79baa6ae60061ce52f8.png'
-import imgC2 from '@/imports/Home/b58f7daf888dd48b7986d465085c4fdbcd6f8c99.png'
-import imgC3 from '@/imports/Home/aa654c04a6f140ac88b78962f565617c7dcaa413.png'
-import imgC4 from '@/imports/Home/004629f91487238df39fc28fee710a8cab755db8.png'
-import imgC5 from '@/imports/Home/af2de6f8c956799a70ea9619414a9a2c14e518b4.png'
-import imgC6 from '@/imports/Home/cd6a0912d75915aaed59d8e5bec53dd84e0c0c5d.png'
-import imgC7 from '@/imports/Home/8fd822f7ab07d7a0c81ff2fde78f8afcc6dee1cb.png'
+import imgC0 from "@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png"
+import imgC1 from "@/imports/Home/4b5167c4a83880a558c5b79baa6ae60061ce52f8.png"
+import imgC2 from "@/imports/Home/b58f7daf888dd48b7986d465085c4fdbcd6f8c99.png"
+import imgC3 from "@/imports/Home/aa654c04a6f140ac88b78962f565617c7dcaa413.png"
+import imgC4 from "@/imports/Home/004629f91487238df39fc28fee710a8cab755db8.png"
+import imgC5 from "@/imports/Home/af2de6f8c956799a70ea9619414a9a2c14e518b4.png"
+import imgC6 from "@/imports/Home/cd6a0912d75915aaed59d8e5bec53dd84e0c0c5d.png"
+import imgC7 from "@/imports/Home/8fd822f7ab07d7a0c81ff2fde78f8afcc6dee1cb.png"
 
 // ── Playstation detail ────────────────────────────────────────────────────────
-import imgPS1 from '@/imports/Playstation-1/b9f92c64362555697b1bf52070200b5776449dd9.png'
-import imgPS2 from '@/imports/Playstation-1/712bc7808b04958224ac8952234b52ff22823da0.png'
-import imgPS3 from '@/imports/Playstation-1/399f11adf248c3bddad6aa41d12930562278241a.png'
-import imgPS4 from '@/imports/Playstation-1/d141364c892e76f9f0086baf105fbc5003b811df.png'
-import imgPS5 from '@/imports/Playstation-1/1bfd329f51e198222cbf1335e958f93e9bbef465.png'
-import imgPS6 from '@/imports/Playstation-1/957bca79229f9f620b8e6263af445e3b16bc178b.png'
+import imgPS1 from "@/imports/Playstation-1/b9f92c64362555697b1bf52070200b5776449dd9.png"
+import imgPS2 from "@/imports/Playstation-1/712bc7808b04958224ac8952234b52ff22823da0.png"
+import imgPS3 from "@/imports/Playstation-1/399f11adf248c3bddad6aa41d12930562278241a.png"
+import imgPS4 from "@/imports/Playstation-1/d141364c892e76f9f0086baf105fbc5003b811df.png"
+import imgPS5 from "@/imports/Playstation-1/1bfd329f51e198222cbf1335e958f93e9bbef465.png"
+import imgPS6 from "@/imports/Playstation-1/957bca79229f9f620b8e6263af445e3b16bc178b.png"
 
 // ── Decolar detail ────────────────────────────────────────────────────────────
-import imgDec1 from '@/imports/Decolar/1.jpg'
-import imgDec2 from '@/imports/Decolar/2.jpg'
-import imgDec3 from '@/imports/Decolar/3.jpg'
-import imgDec4 from '@/imports/Decolar/4.jpg'
-import imgDec5 from '@/imports/Decolar/5.jpg'
-import imgDec6 from '@/imports/Decolar/6.jpg'
-import imgDec7 from '@/imports/Decolar/7.jpg'
-import imgDec8 from '@/imports/Decolar/8.jpg'
-import imgDec9 from '@/imports/Decolar/9.jpg'
-import imgDec10 from '@/imports/Decolar/10.jpg'
+import imgDec1 from "@/imports/Decolar/1.jpg"
+import imgDec2 from "@/imports/Decolar/2.jpg"
+import imgDec3 from "@/imports/Decolar/3.jpg"
+import imgDec4 from "@/imports/Decolar/4.jpg"
+import imgDec5 from "@/imports/Decolar/5.jpg"
+import imgDec6 from "@/imports/Decolar/6.jpg"
+import imgDec7 from "@/imports/Decolar/7.jpg"
+import imgDec8 from "@/imports/Decolar/8.jpg"
+import imgDec9 from "@/imports/Decolar/9.jpg"
+import imgDec10 from "@/imports/Decolar/10.jpg"
 
 // ── Soundroom detail ──────────────────────────────────────────────────────────
-import imgSnd1 from '@/imports/Soundroom/5c1c7db8bda671d3301de454303f2df32f7f02e6.png'
-import imgSnd2 from '@/imports/Soundroom/b3e76a13886665494eb1e3bd7733419efa6ad114.png'
-import imgSnd3 from '@/imports/Soundroom/b729fc34dc283d938b246926ebce3bc057101490.png'
-import imgSnd4 from '@/imports/Soundroom/d34bc3c6bfe03581ef4b363fef18edb46113864f.png'
-import imgSnd5 from '@/imports/Soundroom/608d83c88b6e1960d9629dc8ad826e8cca3bb30f.png'
-import imgSnd6 from '@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256d.png'
+import imgSnd1 from "@/imports/Soundroom/5c1c7db8bda671d3301de454303f2df32f7f02e6.png"
+import imgSnd2 from "@/imports/Soundroom/b3e76a13886665494eb1e3bd7733419efa6ad114.png"
+import imgSnd3 from "@/imports/Soundroom/b729fc34dc283d938b246926ebce3bc057101490.png"
+import imgSnd4 from "@/imports/Soundroom/d34bc3c6bfe03581ef4b363fef18edb46113864f.png"
+import imgSnd5 from "@/imports/Soundroom/608d83c88b6e1960d9629dc8ad826e8cca3bb30f.png"
+import imgSnd6 from "@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256d.png"
 
 // ── Types & data ──────────────────────────────────────────────────────────────
-type ProjectId = 'playstation' | 'decolar' | 'soundroom'
+type ProjectId = "playstation" | "decolar" | "soundroom"
+type Point = { x: number; y: number }
 
-// "bg" marks a mockup slide with a flat background: below lg the panel is tall
-// and narrow, so these are shown whole (object-contain, blending into bg)
-// instead of being cropped to their middle. Full-bleed photos have no bg.
+// "bg" marks a mockup slide with a flat background: the mobile gallery shows
+// these whole (object-contain, blending into bg) instead of cropping them.
+// Full-bleed photos have no bg and are always object-cover.
 const carouselItems: { img: string; project: ProjectId; bg?: string }[] = [
-  { img: imgC0, project: 'playstation', bg: '#0B0C10' },
-  { img: imgC1, project: 'playstation' },
-  { img: imgC2, project: 'decolar', bg: '#F4F5F0' },
-  { img: imgC3, project: 'decolar' },
-  { img: imgC4, project: 'decolar', bg: '#F4F5F0' },
-  { img: imgC5, project: 'soundroom', bg: '#0B0C10' },
-  { img: imgC6, project: 'soundroom', bg: '#0B0C10' },
-  { img: imgC7, project: 'soundroom', bg: '#0B0C10' },
+  { img: imgC0, project: "playstation", bg: "#0B0C10" },
+  { img: imgC1, project: "playstation" },
+  { img: imgC2, project: "decolar", bg: "#F4F5F0" },
+  { img: imgC3, project: "decolar" },
+  { img: imgC4, project: "decolar", bg: "#F4F5F0" },
+  { img: imgC5, project: "soundroom", bg: "#0B0C10" },
+  { img: imgC6, project: "soundroom", bg: "#0B0C10" },
+  { img: imgC7, project: "soundroom", bg: "#0B0C10" },
 ]
 
 const psText = [
@@ -80,25 +88,97 @@ const soundroomText = [
   `As a result, the project culturally deepens an already recurring habit, encouraging the listening of albums as complete works and expanding the visibility of independent artists. By reducing dependence on algorithmic trends, Soundroom repositions music as an active experience — something that is not only listened to, but interpreted, discussed, and preserved.`,
 ]
 
-const projects: Record<ProjectId, { title: string; subtitle: string; paragraphs: string[]; images: string[] }> = {
+const projects: Record<ProjectId, {
+  title: string
+  subtitle: string
+  paragraphs: string[]
+  images: string[]
+}> = {
   playstation: {
-    title: 'Playstation',
-    subtitle: 'Design study',
+    title: "Playstation",
+    subtitle: "Design study",
     paragraphs: psText,
     images: [imgPS1, imgPS2, imgPS3, imgPS4, imgPS5, imgPS6],
   },
   decolar: {
-    title: 'Decolar',
-    subtitle: 'Design study',
+    title: "Decolar",
+    subtitle: "Design study",
     paragraphs: decolarText,
-    images: [imgDec1, imgDec2, imgDec3, imgDec4, imgDec5, imgDec6, imgDec7, imgDec8, imgDec9, imgDec10],
+    images: [
+      imgDec1,
+      imgDec2,
+      imgDec3,
+      imgDec4,
+      imgDec5,
+      imgDec6,
+      imgDec7,
+      imgDec8,
+      imgDec9,
+      imgDec10,
+    ],
   },
   soundroom: {
-    title: 'Soundroom',
-    subtitle: 'University Project',
+    title: "Soundroom",
+    subtitle: "University Project",
     paragraphs: soundroomText,
     images: [imgSnd1, imgSnd2, imgSnd3, imgSnd4, imgSnd5, imgSnd6],
   },
+}
+
+// ── Shared media-query hook ───────────────────────────────────────────────────
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches,
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const update = () => setMatches(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [query])
+
+  return matches
+}
+
+// Custom fixed-position cursors (ViewCursor, CloseCursor, HomePageCursor) only
+// make sense on pointer devices with real hover: on touch, there is no
+// mouseleave when a finger lifts, so they would stay stuck floating at the
+// last tap position. Callers gate rendering on this and fall back to the
+// browser's normal cursor.
+function useHasHover() {
+  return useMediaQuery("(hover: hover) and (pointer: fine)")
+}
+
+// The scroll-controlled project navigation and the vertical gallery are two
+// different interactions for the same data — this is the single switch
+// between them, matching the `lg` (1024px) Tailwind breakpoint used for the
+// rest of the responsive layout.
+function useIsDesktop() {
+  return useMediaQuery("(min-width: 1024px)")
+}
+
+function usePrefersReducedMotion() {
+  return useMediaQuery("(prefers-reduced-motion: reduce)")
+}
+
+function viewportCenter(): Point {
+  return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+}
+
+// Exact distance from a point to the viewport's farthest corner. Used as the
+// mask's target radius instead of a generic oversized constant: with a fast
+// "decelerate" easing curve, a generously-oversized radius reaches full
+// *visible* coverage very early and spends the rest of the transition
+// growing off-screen — reading as a quick flash, not a reveal. Sizing the
+// circle to exactly what the viewport needs makes the full transition
+// duration map onto the full visible reveal.
+function distanceToFarthestCorner(point: Point): number {
+  if (typeof window === "undefined") return 0
+  const dx = Math.max(point.x, window.innerWidth - point.x)
+  const dy = Math.max(point.y, window.innerHeight - point.y)
+  return Math.hypot(dx, dy)
 }
 
 // ── Cursors ───────────────────────────────────────────────────────────────────
@@ -106,53 +186,82 @@ function CloseCursor({ x, y }: { x: number; y: number }) {
   return (
     <div
       className="pointer-events-none fixed z-[9999]"
-      style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
+      style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
     >
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <path d="M3 3L19 19" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" />
-        <path d="M19 3L3 19" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" />
+        <path
+          d="M3 3L19 19"
+          stroke="#1a1a1a"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M19 3L3 19"
+          stroke="#1a1a1a"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   )
 }
 
-function ViewCursor({ x, y, visible }: { x: number; y: number; visible: boolean }) {
+// Over the home desktop project images: a plain white circle blended with
+// `mix-blend-mode: difference`, so whatever sits under the cursor — image,
+// text, flat background — reads as its own color inverted. No icon: the
+// inversion itself is the affordance, and drawing anything on top of it would
+// just sit on top of the effect instead of taking part in it.
+function ImageInvertCursor({
+  x,
+  y,
+  visible,
+}: {
+  x: number
+  y: number
+  visible: boolean
+}) {
+  // `transform` and `mix-blend-mode` live on the same element deliberately:
+  // a transformed *ancestor* creates its own stacking context and isolates
+  // blending inside it, so the circle would only ever blend against its own
+  // (empty) wrapper and paint as flat white instead of inverting the page.
   return (
     <div
-      className="pointer-events-none fixed z-[9999]"
+      className="pointer-events-none fixed z-[9998] rounded-full bg-white"
       style={{
         left: x,
         top: y,
-        transform: 'translate(-50%, -50%)',
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.15s ease',
+        width: 64,
+        height: 64,
+        mixBlendMode: "difference",
+        transform: `translate(-50%, -50%) scale(${visible ? 1 : 0})`,
+        transition: "transform 220ms var(--ease-standard)",
       }}
-    >
-      <div
-        className="flex items-center justify-center rounded-full bg-white"
-        style={{ width: 56, height: 56, boxShadow: '0 2px 16px rgba(0,0,0,0.18)' }}
-      >
-        <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-          <path d="M13 1L19 7L13 13" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M1 7H19" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </div>
-    </div>
+    />
   )
 }
 
-function HomePageCursor({ x, y, hidden, overLink }: { x: number; y: number; hidden: boolean; overLink: boolean }) {
+function HomePageCursor({
+  x,
+  y,
+  hidden,
+  overLink,
+}: {
+  x: number
+  y: number
+  hidden: boolean
+  overLink: boolean
+}) {
   if (hidden) return null
   return (
     <div
       className="pointer-events-none fixed z-[9998]"
-      style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
+      style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
     >
       <div
         className="rounded-full"
         style={{
-          width: 8,
-          height: 8,
+          width: 20,
+          height: 20,
           // same color + timing as the link hover, so dot and text change together
           backgroundColor: overLink ? "var(--link-hover)" : "#000",
           transition: "background-color 150ms var(--ease-standard)",
@@ -162,62 +271,55 @@ function HomePageCursor({ x, y, hidden, overLink }: { x: number; y: number; hidd
   )
 }
 
-// Custom fixed-position cursors (ViewCursor, CloseCursor, HomePageCursor) only
-// make sense on pointer devices with real hover: on touch, there is no
-// mouseleave when a finger lifts, so they would stay stuck floating at the
-// last tap position. Callers gate rendering on this and fall back to the
-// browser's normal cursor.
-function useHasHover() {
-  const query = '(hover: hover) and (pointer: fine)'
-  const [hasHover, setHasHover] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
-
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const update = () => setHasHover(mq.matches)
-    update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
-  }, [])
-
-  return hasHover
-}
-
 // ── Home page ─────────────────────────────────────────────────────────────────
-type HeroWord = { text: string; tone: 'dark' | 'gray'; href?: string; after?: string }
+type HeroWord = {
+  text: string
+  tone: "dark" | "gray"
+  href?: string
+  after?: string
+}
 
 // Words (not lines) are the animated unit: after fonts load we measure which
 // visual line each word landed on and stagger by line. "Work & Co" is a single
 // unbreakable unit and carries its trailing comma outside the link.
 const heroWords: HeroWord[] = [
-  { text: 'Hi!', tone: 'dark' },
-  { text: "I'm", tone: 'dark' },
-  { text: 'Gabriel', tone: 'dark' },
-  { text: 'Braga,', tone: 'dark' },
-  { text: 'a', tone: 'gray' },
-  { text: 'designer', tone: 'gray' },
-  { text: 'at', tone: 'gray' },
-  { text: 'Work & Co', tone: 'gray', href: 'https://www.work.co/', after: ',' },
-  { text: 'based', tone: 'gray' },
-  { text: 'in', tone: 'gray' },
-  { text: 'São', tone: 'gray' },
-  { text: 'Paulo.', tone: 'gray' },
+  { text: "Hi!", tone: "dark" },
+  { text: "I'm", tone: "dark" },
+  { text: "Gabriel", tone: "dark" },
+  { text: "Braga,", tone: "dark" },
+  { text: "a", tone: "gray" },
+  { text: "designer", tone: "gray" },
+  { text: "at", tone: "gray" },
+  { text: "Work & Co", tone: "gray", href: "https://www.work.co/", after: "," },
+  { text: "based", tone: "gray" },
+  { text: "in", tone: "gray" },
+  { text: "São", tone: "gray" },
+  { text: "Paulo.", tone: "gray" },
 ]
 
 const footerLinks = [
-  { label: 'LINKEDIN', href: 'https://www.linkedin.com/in/gabriel-bragaa/' },
-  { label: 'MEDIUM', href: 'https://medium.com/@bragahauser' },
-  { label: 'GITHUB', href: 'https://github.com/bragahauser-byte' },
+  { label: "LINKEDIN", href: "https://www.linkedin.com/in/gabriel-bragaa/" },
+  { label: "MEDIUM", href: "https://medium.com/@bragahauser" },
+  { label: "GITHUB", href: "https://github.com/bragahauser-byte" },
 ]
 
-type EnterPhase = 'wait' | 'run' | 'fast'
+type EnterPhase = "wait" | "run" | "fast"
 
-const ENTERED_KEY = 'portfolio:home-entered'
+const ENTERED_KEY = "portfolio:home-entered"
 // Safety net: never keep the page hidden longer than this waiting on assets.
 const ENTER_GATE_TIMEOUT_MS = 1000
+// Desktop scroll-controlled navigation: how long the crossfade/slide between
+// two projects takes, and therefore how long input stays locked so a single
+// wheel gesture can't fire more than one change.
+const PANEL_TRANSITION_MS = 650
+// How long the mask-reveal transition takes when opening/closing a project.
+const MASK_ENTER_MS = 600
+const MASK_EXIT_MS = 450
+const REDUCED_MOTION_MS = 150
 
 function hasEnteredThisSession() {
   try {
-    return sessionStorage.getItem(ENTERED_KEY) === '1'
+    return sessionStorage.getItem(ENTERED_KEY) === "1"
   } catch {
     return false
   }
@@ -225,7 +327,7 @@ function hasEnteredThisSession() {
 
 function markEnteredThisSession() {
   try {
-    sessionStorage.setItem(ENTERED_KEY, '1')
+    sessionStorage.setItem(ENTERED_KEY, "1")
   } catch {
     /* storage unavailable — animation just replays next visit */
   }
@@ -236,20 +338,22 @@ function measureHeroLines(root: HTMLElement | null): number[] {
   if (!root) return []
   let line = -1
   let lastTop = Number.NaN
-  return Array.from(root.querySelectorAll<HTMLElement>('.hero-word')).map(el => {
-    if (el.offsetTop !== lastTop) {
-      lastTop = el.offsetTop
-      line++
-    }
-    return line
-  })
+  return Array.from(root.querySelectorAll<HTMLElement>(".hero-word")).map(
+    (el) => {
+      if (el.offsetTop !== lastTop) {
+        lastTop = el.offsetTop
+        line++
+      }
+      return line
+    },
+  )
 }
 
 // Holds the Home in its hidden "from" state until the font and the first
 // panel image are ready (or ~1s passes), so the panel never animates empty and
 // the image never "jumps" in afterwards. Full sequence plays once per session.
 function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
-  const [phase, setPhase] = useState<EnterPhase>('wait')
+  const [phase, setPhase] = useState<EnterPhase>("wait")
   const [lines, setLines] = useState<number[]>([])
 
   useEffect(() => {
@@ -257,7 +361,7 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
     const seen = hasEnteredThisSession()
 
     const fontReady = Promise.all([
-      document.fonts?.load('400 32px "PP Neue Montreal"'),
+      document.fonts?.load('400 32px "Plus Jakarta Sans"'),
       document.fonts?.ready,
     ]).catch(() => undefined)
 
@@ -265,12 +369,14 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
     firstImage.src = carouselItems[0].img
     const imageReady = firstImage.decode().catch(() => undefined)
 
-    const timeout = new Promise<void>(resolve => setTimeout(resolve, ENTER_GATE_TIMEOUT_MS))
+    const timeout = new Promise<void>((resolve) =>
+      setTimeout(resolve, ENTER_GATE_TIMEOUT_MS),
+    )
 
     Promise.race([Promise.all([fontReady, imageReady]), timeout]).then(() => {
       if (cancelled) return
       setLines(measureHeroLines(heroRef.current))
-      setPhase(seen ? 'fast' : 'run')
+      setPhase(seen ? "fast" : "run")
       markEnteredThisSession()
     })
 
@@ -282,7 +388,13 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
   return { phase, lines }
 }
 
-function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) => void; isActive: boolean }) {
+function HomePage({
+  onOpenProject,
+  isActive,
+}: {
+  onOpenProject: (id: ProjectId, origin?: Point) => void
+  isActive: boolean
+}) {
   const [idx, setIdx] = useState(0)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
@@ -290,42 +402,83 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
   const heroRef = useRef<HTMLHeadingElement>(null)
   const { phase, lines } = useHomeEntrance(heroRef)
   const hasHover = useHasHover()
+  const isDesktop = useIsDesktop()
+  // Synchronous lock (not state) so a burst of wheel events arriving in the
+  // same tick can never slip past the check before the first one lands.
+  const isAnimatingRef = useRef(false)
 
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % carouselItems.length), 3500)
-    return () => clearInterval(t)
+  const goTo = useCallback((delta: 1 | -1) => {
+    if (isAnimatingRef.current) return
+    setIdx((current) => {
+      const next = Math.min(
+        Math.max(current + delta, 0),
+        carouselItems.length - 1,
+      )
+      if (next === current) return current
+      isAnimatingRef.current = true
+      window.setTimeout(() => {
+        isAnimatingRef.current = false
+      }, PANEL_TRANSITION_MS)
+      return next
+    })
   }, [])
+
+  // Desktop-only: one wheel gesture or arrow-key press moves exactly one
+  // project, forward or back. Never a free-running or looping carousel.
+  useEffect(() => {
+    if (!isDesktop || !isActive) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) < 2) return
+      e.preventDefault()
+      goTo(e.deltaY > 0 ? 1 : -1)
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown" || e.key === "PageDown") goTo(1)
+      else if (e.key === "ArrowUp" || e.key === "PageUp") goTo(-1)
+    }
+
+    window.addEventListener("wheel", handleWheel, { passive: false })
+    window.addEventListener("keydown", handleKey)
+    return () => {
+      window.removeEventListener("wheel", handleWheel)
+      window.removeEventListener("keydown", handleKey)
+    }
+  }, [isDesktop, isActive, goTo])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setCursor({ x: e.clientX, y: e.clientY })
-    setOverLink(!!(e.target as Element).closest('a'))
+    setOverLink(!!(e.target as Element).closest("a"))
   }, [])
 
+  const activeProject = carouselItems[idx].project
+
   return (
-    // One responsive layout. Below `lg` (1024px) it is a stacked, scrollable
-    // column (hero → panel → footer). From `lg` up the children are placed
-    // absolutely to match the 1920×1080 design: 40px margins, panel starting
-    // at 738px, footer aligned to the panel's bottom edge.
+    // Two different "media" blocks below (desktop scroll-panel / mobile
+    // vertical gallery) are shown one at a time via `hidden lg:block` /
+    // `lg:hidden` — their behaviour genuinely differs, so they're not forced
+    // into one shared markup. The hero and footer stay single elements whose
+    // *position* (sticky header → absolute corner) simply changes at `lg`.
     <div
-      className="home relative flex flex-col items-center justify-center gap-[127px] w-full min-h-[100svh] p-0 bg-white md:items-stretch md:justify-start md:gap-10 md:p-10 lg:block lg:min-h-0 lg:h-full lg:gap-0 lg:p-0"
+      className="home relative w-full min-h-[100svh] bg-white lg:h-full lg:min-h-0"
       data-enter={phase}
       onMouseMove={handleMouseMove}
-      style={{ cursor: hasHover ? 'none' : 'auto' }}
+      style={{ cursor: hasHover ? "none" : "auto" }}
     >
       <h1
         ref={heroRef}
-        className="type-hero m-0 w-full pt-16 px-4 select-none md:w-auto md:max-w-[560px] md:pt-0 md:px-0 lg:absolute lg:top-[40px] lg:left-[40px] lg:max-w-none lg:w-[min(465px,calc(37.5%_-_62px))]"
+        className="hero type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(465px,calc(37.5%_-_50px))] lg:bg-transparent lg:p-0"
       >
         {heroWords.map((w, i) => (
           <Fragment key={i}>
-            {i > 0 && ' '}
+            {i > 0 && " "}
             <span
               className="hero-word inline-block whitespace-nowrap"
               style={
                 {
                   // gray copy trails the dark copy by half a step
-                  '--i': (lines[i] ?? 0) + (w.tone === 'gray' ? 0.5 : 0),
-                  color: w.tone === 'gray' ? '#747474' : '#1A1A1A',
+                  "--i": (lines[i] ?? 0) + (w.tone === "gray" ? 0.5 : 0),
+                  color: w.tone === "gray" ? "#747474" : "#1A1A1A",
                 } as CSSProperties
               }
             >
@@ -336,7 +489,12 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
                     target="_blank"
                     rel="noreferrer"
                     className="link-underline"
-                    style={{ cursor: hasHover ? 'none' : 'auto', '--u-bottom': '0.06em' } as CSSProperties}
+                    style={
+                      {
+                        cursor: hasHover ? "none" : "auto",
+                        "--u-bottom": "0.06em",
+                      } as CSSProperties
+                    }
                   >
                     {w.text}
                   </a>
@@ -350,39 +508,80 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
         ))}
       </h1>
 
-      <div
-        className="w-full px-4 md:w-auto md:flex-1 md:px-0 lg:contents"
-      >
-      <div
-        className="panel relative w-full h-[391px] rounded-[12px] overflow-hidden bg-[#0B0C10] md:h-full md:min-h-[320px] lg:absolute lg:min-h-0 lg:w-auto lg:h-auto lg:top-[40px] lg:bottom-[40px] lg:left-[calc(37.5%_+_18px)] lg:right-[40px]"
-        style={{ cursor: hasHover ? 'none' : 'pointer' }}
-        onMouseEnter={() => hasHover && setViewCursorVisible(true)}
-        onMouseLeave={() => setViewCursorVisible(false)}
-        onClick={() => onOpenProject(carouselItems[idx].project)}
-      >
-        {/* Wrapper carries the entrance animation so the per-image opacity
-            cross-fade (inline style) is left untouched. */}
-        <div className="panel-media absolute inset-0">
-          {carouselItems.map((item, i) => (
-            <img
-              key={i}
-              src={item.img}
-              alt=""
-              loading={i === 0 ? 'eager' : 'lazy'}
-              decoding="async"
-              fetchPriority={i === 0 ? 'high' : 'low'}
-              className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none ${item.bg ? 'max-lg:object-contain' : ''}`}
-              style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.7s ease', backgroundColor: item.bg }}
-            />
-          ))}
+      {/* ── Desktop (lg+): one project fills the frame; scrolling or the arrow
+          keys move to the next/previous one. Subtle opacity + a few px of
+          vertical drift, no slide, no zoom — editorial, not a slideshow. ── */}
+      <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:left-[calc(37.5%_+_14px)] lg:right-[32px]">
+        <div
+          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-[#0B0C10]"
+          style={{ cursor: hasHover ? "none" : "pointer" }}
+          onMouseEnter={() => hasHover && setViewCursorVisible(true)}
+          onMouseLeave={() => setViewCursorVisible(false)}
+          onClick={(e) =>
+            onOpenProject(activeProject, { x: e.clientX, y: e.clientY })
+          }
+        >
+          <div className="panel-media absolute inset-0">
+            {carouselItems.map((item, i) => {
+              const offset = i === idx ? 0 : i > idx ? 10 : -10
+              return (
+                <img
+                  key={i}
+                  src={item.img}
+                  alt=""
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === 0 ? "high" : "low"}
+                  className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
+                  style={{
+                    opacity: i === idx ? 1 : 0,
+                    transform: `translateY(${offset}px) scale(${
+                      i === idx ? 1 : 0.985
+                    })`,
+                    transition: `opacity ${PANEL_TRANSITION_MS}ms var(--ease-standard), transform ${PANEL_TRANSITION_MS}ms var(--ease-standard)`,
+                  }}
+                />
+              )
+            })}
+          </div>
         </div>
       </div>
+
+      {/* ── Mobile / tablet (<lg): every project image, stacked in document
+          order, natural scroll — no carousel, no snap, no auto-play. The
+          hero above acts as the fixed header via `sticky top-0`. ─────────── */}
+      <div className="panel-media flex flex-col gap-4 px-4 pt-10 pb-2 lg:hidden">
+        {carouselItems.map((item, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Abrir ${projects[item.project].title}`}
+            className="relative block aspect-[4/3] w-full overflow-hidden rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link-hover)]"
+            style={{
+              backgroundColor: item.bg,
+              cursor: hasHover ? "none" : "pointer",
+            }}
+            onClick={(e) =>
+              onOpenProject(item.project, { x: e.clientX, y: e.clientY })
+            }
+          >
+            <img
+              src={item.img}
+              alt=""
+              loading={i < 2 ? "eager" : "lazy"}
+              decoding="async"
+              className={`absolute inset-0 h-full w-full pointer-events-none select-none ${
+                item.bg ? "object-contain" : "object-cover"
+              }`}
+            />
+          </button>
+        ))}
       </div>
 
       <nav
         aria-label="Links externos"
-        className="footer type-footer flex flex-nowrap gap-[73px] px-4 pb-10 text-[#1A1A1A] md:flex-wrap md:gap-x-[2.5em] md:gap-y-2 md:px-0 md:pb-0 lg:gap-x-[4.0833em] lg:absolute lg:bottom-[41px] lg:left-[40px] lg:flex-nowrap"
-        style={{ '--u-bottom': '-0.1em' } as CSSProperties}
+        className="footer type-footer flex flex-wrap gap-x-[2.5em] gap-y-2 px-4 pb-10 text-[#1A1A1A] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:flex-nowrap lg:gap-x-[4.0833em] lg:px-0 lg:pb-0"
+        style={{ "--u-bottom": "-0.1em" } as CSSProperties}
       >
         {footerLinks.map((l, i) => (
           <a
@@ -391,7 +590,9 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
             target="_blank"
             rel="noreferrer"
             className="footer-link link-underline"
-            style={{ cursor: hasHover ? 'none' : 'auto', '--i': i } as CSSProperties}
+            style={
+              { cursor: hasHover ? "none" : "auto", "--i": i } as CSSProperties
+            }
           >
             {l.label}
           </a>
@@ -399,23 +600,26 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
       </nav>
 
       <p className="sr-only">
-        Gabriel Braga (also written Gabriel Braga Hauser or Gabriel Braga Houser) is a Product Designer, UX Designer,
-        UI Designer, UX/UI Designer, UX Researcher, Interaction Designer, Visual Designer, Digital Designer and Graphic
-        Designer based in São Paulo, Brazil, currently at Work & Co. Background: Work & Co, Cherey, Beauty Express,
-        Alinea Hair and Digital Design at Universidade Anhembi Morumbi.
+        Gabriel Braga (also written Gabriel Braga Hauser or Gabriel Braga
+        Houser) is a Product Designer, UX Designer, UI Designer, UX/UI Designer,
+        UX Researcher, Interaction Designer, Visual Designer, Digital Designer
+        and Graphic Designer based in São Paulo, Brazil, currently at Work & Co.
+        Background: Work & Co, Cherey, Beauty Express, Alinea Hair and Digital
+        Design at Universidade Anhembi Morumbi.
       </p>
       <p className="sr-only" lang="pt-BR">
-        Gabriel Braga (Gabriel Braga Hauser / Houser) é Designer de Produto, Designer UX, Designer UI, Designer UX/UI,
-        UX Researcher, Designer de Interação, Designer Visual, Designer Digital e Designer Gráfico em São Paulo,
-        atualmente na Work & Co.
+        Gabriel Braga (Gabriel Braga Hauser / Houser) é Designer de Produto,
+        Designer UX, Designer UI, Designer UX/UI, UX Researcher, Designer de
+        Interação, Designer Visual, Designer Digital e Designer Gráfico em São
+        Paulo, atualmente na Work & Co.
       </p>
       <nav className="sr-only" aria-label="Case studies">
-        {(Object.keys(projects) as ProjectId[]).map(id => (
+        {(Object.keys(projects) as ProjectId[]).map((id) => (
           <a
             key={id}
             href={seo.routes[id].path}
             tabIndex={-1}
-            onClick={e => {
+            onClick={(e) => {
               e.preventDefault()
               onOpenProject(id)
             }}
@@ -425,38 +629,58 @@ function HomePage({ onOpenProject, isActive }: { onOpenProject: (id: ProjectId) 
         ))}
       </nav>
 
-      {hasHover && <ViewCursor x={cursor.x} y={cursor.y} visible={viewCursorVisible} />}
-      {hasHover && isActive && <HomePageCursor x={cursor.x} y={cursor.y} hidden={viewCursorVisible} overLink={overLink} />}
+      {hasHover && (
+        <ImageInvertCursor
+          x={cursor.x}
+          y={cursor.y}
+          visible={viewCursorVisible}
+        />
+      )}
+      {hasHover && isActive && (
+        <HomePageCursor
+          x={cursor.x}
+          y={cursor.y}
+          hidden={viewCursorVisible}
+          overLink={overLink}
+        />
+      )}
     </div>
   )
 }
 
 // ── Project page ──────────────────────────────────────────────────────────────
 // The desktop text block is sticky. Once it is taller than the viewport a plain
-// `top: 40px` would cut off its end, so the stick point moves up: the block
-// scrolls until its bottom is 40px above the viewport bottom, then holds there
+// `top: 32px` would cut off its end, so the stick point moves up: the block
+// scrolls until its bottom is 32px above the viewport bottom, then holds there
 // while the images keep scrolling. Short blocks behave exactly as before.
-function useStickyTop(ref: RefObject<HTMLElement | null>, margin = 40) {
+function useStickyTop(ref: RefObject<HTMLElement | null>, margin = 32) {
   const [top, setTop] = useState(margin)
 
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const update = () => setTop(Math.min(margin, window.innerHeight - el.offsetHeight - margin))
+    const update = () =>
+      setTop(Math.min(margin, window.innerHeight - el.offsetHeight - margin))
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
-    window.addEventListener('resize', update)
+    window.addEventListener("resize", update)
     return () => {
       ro.disconnect()
-      window.removeEventListener('resize', update)
+      window.removeEventListener("resize", update)
     }
   }, [ref, margin])
 
   return top
 }
 
-function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
+function ProjectPage({
+  id,
+  onClose,
+}: {
+  id: ProjectId
+  onClose: (origin?: Point) => void
+}) {
   const [cursor, setCursor] = useState({ x: -100, y: -100 })
   const project = projects[id]
   const textBlockRef = useRef<HTMLDivElement>(null)
@@ -468,9 +692,9 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
     // of whatever scroll position the Home page (behind it) is at.
     <div
       className="fixed inset-0 overflow-y-auto bg-white"
-      style={{ cursor: hasHover ? 'none' : 'auto' }}
-      onMouseMove={e => setCursor({ x: e.clientX, y: e.clientY })}
-      onClick={onClose}
+      style={{ cursor: hasHover ? "none" : "auto" }}
+      onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
+      onClick={(e) => onClose({ x: e.clientX, y: e.clientY })}
     >
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
       <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
@@ -480,16 +704,24 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
         </div>
         <div className="flex flex-col gap-[24px]">
           {project.paragraphs.map((p, i) => (
-            <p key={i} className="type-body m-0 text-justify text-[#333333] [word-break:break-word]">{p}</p>
+            <p
+              key={i}
+              className="type-body m-0 text-justify text-[#333333] [word-break:break-word]"
+            >
+              {p}
+            </p>
           ))}
         </div>
         <div className="flex flex-col gap-[20px]">
           {project.images.map((img, i) => (
-            <div key={i} className="relative w-full aspect-[4/3] rounded-[12px] overflow-hidden">
+            <div
+              key={i}
+              className="relative w-full aspect-[4/3] rounded-[12px] overflow-hidden"
+            >
               <img
                 src={img}
                 alt=""
-                loading={i === 0 ? 'eager' : 'lazy'}
+                loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
               />
@@ -502,47 +734,62 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
       {/* No `items-start` here: the row keeps the default `stretch`, so the
           Left column's box grows to match the Right column's full height.
           That gives the sticky text room to stick — and, combined with the
-          40px bottom padding on Left, it stops with a clean 40px gap above
+          32px bottom padding on Left, it stops with a clean 32px gap above
           the bottom instead of leaving blank space once the text runs out. */}
-      <div className="hidden lg:flex" style={{ paddingTop: 40, paddingBottom: 40 }}>
-
-        {/* Left: text column — 40px gutters, image column starts at 37.5% + 18px */}
+      <div
+        className="hidden lg:flex"
+        style={{ paddingTop: 32, paddingBottom: 32 }}
+      >
+        {/* Left: text column — 32px gutters, image column starts at 37.5% + 14px */}
         <div
           style={{
             flexShrink: 0,
-            width: 'calc(37.5% + 18px)',
-            paddingLeft: 40,
-            paddingRight: 40,
-            paddingBottom: 40,
+            width: "calc(37.5% + 14px)",
+            paddingLeft: 32,
+            paddingRight: 32,
+            paddingBottom: 32,
           }}
         >
-          <div ref={textBlockRef} style={{ position: 'sticky', top: stickyTop }}>
-            <div style={{ marginBottom: 'min(198px, 18.33vh)' }}>
+          <div
+            ref={textBlockRef}
+            style={{ position: "sticky", top: stickyTop }}
+          >
+            <div style={{ marginBottom: "min(198px, 18.33vh)" }}>
               <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
-              <p className="type-title m-0 text-[#747474]">{project.subtitle}</p>
+              <p className="type-title m-0 text-[#747474]">
+                {project.subtitle}
+              </p>
             </div>
-            <div className="flex flex-col" style={{ gap: 'clamp(24px, 1.6667vw, 32px)' }}>
+            <div
+              className="flex flex-col"
+              style={{ gap: "clamp(24px, 1.6667vw, 32px)" }}
+            >
               {project.paragraphs.map((p, i) => (
-                <p key={i} className="type-body m-0 text-justify text-[#333333] [word-break:break-word]">{p}</p>
+                <p
+                  key={i}
+                  className="type-body m-0 text-justify text-[#333333] [word-break:break-word]"
+                >
+                  {p}
+                </p>
               ))}
             </div>
           </div>
         </div>
 
         {/* Right: image catalog — natural flow, scrolls with the single scroll.
-            Each image fills the viewport minus the 40px top/bottom margins. */}
-        <div style={{ flex: 1, paddingRight: 40 }}>
-          <div className="flex flex-col gap-[40px]">
+            Each image fills the viewport minus the 32px top/bottom margins. */}
+        <div style={{ flex: 1, paddingRight: 32 }}>
+          <div className="flex flex-col gap-[32px]">
             {project.images.map((img, i) => (
               <div
                 key={i}
                 className="relative w-full rounded-[12px] overflow-hidden"
-                style={{ height: 'calc(100vh - 80px)' }}
+                style={{ height: "calc(100vh - 64px)" }}
               >
                 <img
                   src={img}
                   alt=""
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
                 />
@@ -559,70 +806,121 @@ function ProjectPage({ id, onClose }: { id: ProjectId; onClose: () => void }) {
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 const pathToProject: Record<string, ProjectId> = {
-  '/decolar': 'decolar',
-  '/sound-room': 'soundroom',
-  '/playstation-connect': 'playstation',
+  "/decolar": "decolar",
+  "/sound-room": "soundroom",
+  "/playstation-connect": "playstation",
 }
 const projectToPath: Record<ProjectId, string> = {
-  decolar: '/decolar',
-  soundroom: '/sound-room',
-  playstation: '/playstation-connect',
+  decolar: "/decolar",
+  soundroom: "/sound-room",
+  playstation: "/playstation-connect",
 }
 
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const cleanPath = location.pathname.replace(/\/$/, '') || '/'
-const overlay = pathToProject[cleanPath] ?? null
+  const cleanPath = location.pathname.replace(/\/$/, "") || "/"
+  const overlay = pathToProject[cleanPath] ?? null
+  const reducedMotion = usePrefersReducedMotion()
 
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
+  // Where the mask reveal grows from/collapses into — the point the user
+  // actually clicked, so opening and closing both read as "a window into the
+  // content," not a generic wipe. Falls back to the viewport center for
+  // keyboard activation or a direct deep link.
+  const [maskOrigin, setMaskOrigin] = useState<Point>(() =>
+    typeof window !== "undefined" ? viewportCenter() : { x: 0, y: 0 },
+  )
+  const [maskRadius, setMaskRadius] = useState(() =>
+    distanceToFarthestCorner(maskOrigin),
+  )
 
   useEffect(() => {
     if (overlay) {
       setRenderedOverlay(overlay)
-      requestAnimationFrame(() => requestAnimationFrame(() => setOverlayVisible(true)))
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => setOverlayVisible(true)),
+      )
     } else if (renderedOverlay) {
       setOverlayVisible(false)
-      const t = setTimeout(() => setRenderedOverlay(null), 420)
+      const t = setTimeout(
+        () => setRenderedOverlay(null),
+        reducedMotion ? REDUCED_MOTION_MS : MASK_EXIT_MS,
+      )
       return () => clearTimeout(t)
     }
   }, [overlay])
 
   useEffect(() => {
     const page = overlay ? seo.routes[overlay] : seo.home
-    const url = seo.siteUrl + (overlay ? seo.routes[overlay].path : '/')
+    const url = seo.siteUrl + (overlay ? seo.routes[overlay].path : "/")
     document.title = page.title
-    document.querySelector('meta[name="description"]')?.setAttribute('content', page.description)
-    document.querySelector('meta[property="og:title"]')?.setAttribute('content', page.title)
-    document.querySelector('meta[property="og:description"]')?.setAttribute('content', page.description)
-    document.querySelector('meta[property="og:url"]')?.setAttribute('content', url)
-    document.querySelector('link[rel="canonical"]')?.setAttribute('href', url)
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute("content", page.description)
+    document
+      .querySelector('meta[property="og:title"]')
+      ?.setAttribute("content", page.title)
+    document
+      .querySelector('meta[property="og:description"]')
+      ?.setAttribute("content", page.description)
+    document
+      .querySelector('meta[property="og:url"]')
+      ?.setAttribute("content", url)
+    document.querySelector('link[rel="canonical"]')?.setAttribute("href", url)
   }, [overlay])
 
-  function openProject(id: ProjectId) {
+  function openProject(id: ProjectId, origin?: Point) {
+    const point = origin ?? viewportCenter()
+    setMaskOrigin(point)
+    setMaskRadius(distanceToFarthestCorner(point))
     navigate(projectToPath[id])
   }
 
-  function closeProject() {
-    navigate('/')
+  function closeProject(origin?: Point) {
+    const point = origin ?? viewportCenter()
+    setMaskOrigin(point)
+    setMaskRadius(distanceToFarthestCorner(point))
+    navigate("/")
   }
 
+  // Reveal-by-mask: the project page grows out of / collapses into the click
+  // point through an expanding circular clip-path — editorial, not the usual
+  // left/right slide. `prefers-reduced-motion` swaps it for a short plain fade.
+  const maskStyle: CSSProperties = reducedMotion
+    ? {
+        opacity: overlayVisible ? 1 : 0,
+        transition: `opacity ${REDUCED_MOTION_MS}ms linear`,
+      }
+    : {
+        clipPath: `circle(${
+          overlayVisible ? maskRadius : 0
+        }px at ${maskOrigin.x}px ${maskOrigin.y}px)`,
+        transition: `clip-path ${
+          overlayVisible ? MASK_ENTER_MS : MASK_EXIT_MS
+        }ms ${overlayVisible ? "var(--ease-enter)" : "var(--ease-exit)"}`,
+        willChange: "clip-path",
+      }
+
   return (
-    <div className="relative min-h-[100svh] overflow-y-auto lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
+    // No `overflow-y-auto` here below `lg`: this div's height is unconstrained
+    // (min-h only), so it never scrolls internally anyway — but `overflow`
+    // being anything but `visible` makes it register as the nearest
+    // scrolling ancestor for `position: sticky` below, which stops the
+    // mobile header from sticking to the real viewport. `lg:overflow-hidden`
+    // is still correct at `lg`, where nothing should scroll at all.
+    <div className="relative min-h-[100svh] lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
       <div className="relative lg:absolute lg:inset-0">
         <HomePage onOpenProject={openProject} isActive={!overlay} />
       </div>
 
+      {/* z-30: must beat the mobile sticky header's z-20, or that header's
+          explicit z-index would stack it above this overlay (which has no
+          z-index of its own) regardless of DOM order, leaking through the
+          mask on mobile. */}
       {renderedOverlay && (
-        <div
-          className="fixed inset-0"
-          style={{
-            transform: overlayVisible ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)',
-            willChange: 'transform',
-          }}
-        >
+        <div className="fixed inset-0 z-30" style={maskStyle}>
           <ProjectPage id={renderedOverlay} onClose={closeProject} />
         </div>
       )}

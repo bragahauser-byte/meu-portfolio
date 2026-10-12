@@ -1,51 +1,19 @@
 @import 'tailwindcss';
 
-/* ── PP Neue Montreal ──────────────────────────────────────────────────────── */
+/* ── Plus Jakarta Sans ─────────────────────────────────────────────────────────
+   Single self-hosted variable file (Latin subset — covers Portuguese
+   diacritics) spanning the whole weight axis, so one small download replaces
+   what would otherwise be four separate static-weight files. */
 @font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-thin.otf') format('opentype');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-book.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-italic.otf') format('opentype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-medium.otf') format('opentype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-semibolditalic.otf') format('opentype');
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'PP Neue Montreal';
-  src: url('./assets/fonts/ppneuemontreal-bold.otf') format('opentype');
-  font-weight: 700;
+  font-family: 'Plus Jakarta Sans';
+  src: url('./assets/fonts/PlusJakartaSans-variable.woff2') format('woff2');
+  font-weight: 200 800;
   font-style: normal;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: 'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 *, *::before, *::after {
@@ -174,7 +142,7 @@ html, body, #root {
   }
 }
 
-/* ── Escala tipográfica (PP Neue Montreal) ────────────────────────────────────
+/* ── Escala tipográfica (Plus Jakarta Sans) ──────────────────────────────────
    Valores do Figma no frame de 1920px: hero 32/40, título 28/32, corpo 24/32,
    rodapé 24/20 (tracking -0.04em). Abaixo de 1920px escala de forma fluida
    (vw) com piso legível; em mobile/tablet usa tamanhos próprios. */

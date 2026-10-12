@@ -8,9 +8,9 @@ Home com carrossel de projetos e páginas de estudo de caso: **PlayStation Conne
 
 ## Tecnologias
 
-React 19, TypeScript, Vite, Tailwind CSS 4 e React Router. Tipografia **PP Neue Montreal**.
+React 19, TypeScript, Vite, Tailwind CSS 4 e React Router. Tipografia **Plus Jakarta Sans**.
 
-> As fontes PP Neue Montreal são da Pangram Pangram e têm licença própria; confira os termos antes de reutilizá-las em outros projetos.
+> Plus Jakarta Sans é open-source (SIL Open Font License) e fica hospedada localmente em `src/assets/fonts/` como um único arquivo variável (`wght` 200–800).
 
 ## Rodando localmente
 
@@ -39,10 +39,11 @@ Título, descrição, URL canônica e tags `og:*` de cada página vêm de `src/s
 ## Estrutura
 
 ```
-src/App.tsx          páginas (Home, cases) e entrada animada
+src/App.tsx          páginas (Home, cases), motion e entrada animada
 src/seo.json         título/descrição/URL de cada rota
-src/assets/fonts/    fontes PP Neue Montreal
+src/assets/fonts/    fonte Plus Jakarta Sans (variável)
 src/imports/         imagens dos projetos
 scripts/             copy-routes.mjs (HTML por rota + metadados)
+docs/                brief original do projeto (histórico)
 public/              CNAME, sitemap, robots, favicons
 ```
