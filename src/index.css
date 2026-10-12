@@ -52,7 +52,7 @@ html, body, #root {
   --dy-media: 24px;
   --dy-footer: 8px;
 
-  --link-hover: #DB224D;
+  --link-hover: #FF3334;
 
   /* Grade desktop (frame de 1920px do Figma): imagem da home 1074px de
      largura; coluna de texto do projeto 437px, imagem começando em 501px. */

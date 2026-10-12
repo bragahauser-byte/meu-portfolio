@@ -298,9 +298,10 @@ const ENTER_GATE_TIMEOUT_MS = 1000
 const TRANSITION_MS = 200
 const REDUCED_MOTION_MS = 150
 
-// Desktop scroll between projects: the current image fades to white, then the
-// new one fades in — fade, white, fade. Input stays locked for the whole
-// sequence so a single wheel gesture can't fire more than one change.
+// Desktop scroll between projects: the current image fades out to the dark
+// frame (#1A1A1A), then the new one fades in — fade, dark, fade. Input stays
+// locked for the whole sequence so a single wheel gesture can't fire more
+// than one change.
 const SWAP_OUT_MS = 110
 const SWAP_IN_MS = 170
 const SWAP_LOCK_MS = SWAP_OUT_MS + SWAP_IN_MS
@@ -538,12 +539,12 @@ function HomePage({
 
       {/* ── Desktop (lg+): one project fills the frame (1074×1016 at 1920,
           32px from the top/right/bottom); scrolling or the arrow keys move
-          to the next/previous one — fade out to white, fade the new one in. */}
+          to the next/previous one — fade out to #1A1A1A, fade the new one in. */}
       <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:right-[32px] lg:w-[var(--home-img-w)]">
         <div
           ref={panelRef}
           data-home-panel
-          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-white"
+          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-[#1A1A1A]"
           style={{
             cursor: hasHover ? "none" : "pointer",
             visibility: panelHidden ? "hidden" : "visible",
@@ -565,7 +566,7 @@ function HomePage({
                 className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
                 style={{
                   opacity: i === idx ? 1 : 0,
-                  // incoming waits for the outgoing to clear: fade → white → fade
+                  // incoming waits for the outgoing to clear: fade → #1A1A1A → fade
                   transition:
                     i === idx
                       ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
@@ -577,9 +578,9 @@ function HomePage({
         </div>
       </div>
 
-      {/* Image counter: one 8px dot per home image, 12px apart, vertically
+      {/* Image counter: one 6px dot per home image, 12px apart, vertically
           centred, 32px to the left of the frame. */}
-      <div className="home-chrome hidden lg:block lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-[calc(64px_+_var(--home-img-w))] lg:w-2">
+      <div className="home-chrome hidden lg:block lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-[calc(64px_+_var(--home-img-w))] lg:w-1.5">
         <div className="dots flex flex-col gap-[12px]" aria-label="Projetos">
           {carouselItems.map((item, i) => (
             <button
@@ -587,9 +588,9 @@ function HomePage({
               type="button"
               aria-label={`${projects[item.project].title} ${i + 1} de ${carouselItems.length}`}
               aria-current={i === idx ? "true" : undefined}
-              className="block size-2 rounded-full p-0 border-0"
+              className="block size-1.5 rounded-full p-0 border-0"
               style={{
-                backgroundColor: i === idx ? "#000000" : "#D9D9D9",
+                backgroundColor: i === idx ? "#1A1A1A" : "#757575",
                 transition: `background-color ${SWAP_LOCK_MS}ms var(--ease-standard)`,
                 cursor: hasHover ? "none" : "pointer",
               }}
@@ -993,7 +994,7 @@ function Flight({
     <div
       ref={boxRef}
       aria-hidden="true"
-      className="pointer-events-none fixed z-40 overflow-hidden rounded-[12px] bg-white"
+      className="pointer-events-none fixed z-40 overflow-hidden rounded-[12px] bg-[#1A1A1A]"
       style={{
         left: from.left,
         top: from.top,
