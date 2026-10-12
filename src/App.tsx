@@ -50,7 +50,6 @@ import imgSnd6 from "@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256
 
 // ── Types & data ──────────────────────────────────────────────────────────────
 type ProjectId = "playstation" | "decolar" | "soundroom"
-type Point = { x: number; y: number }
 
 // "bg" marks a mockup slide with a flat background: the mobile gallery shows
 // these whole (object-contain, blending into bg) instead of cropping them.
@@ -161,24 +160,6 @@ function useIsDesktop() {
 
 function usePrefersReducedMotion() {
   return useMediaQuery("(prefers-reduced-motion: reduce)")
-}
-
-function viewportCenter(): Point {
-  return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-}
-
-// Exact distance from a point to the viewport's farthest corner. Used as the
-// mask's target radius instead of a generic oversized constant: with a fast
-// "decelerate" easing curve, a generously-oversized radius reaches full
-// *visible* coverage very early and spends the rest of the transition
-// growing off-screen — reading as a quick flash, not a reveal. Sizing the
-// circle to exactly what the viewport needs makes the full transition
-// duration map onto the full visible reveal.
-function distanceToFarthestCorner(point: Point): number {
-  if (typeof window === "undefined") return 0
-  const dx = Math.max(point.x, window.innerWidth - point.x)
-  const dy = Math.max(point.y, window.innerHeight - point.y)
-  return Math.hypot(dx, dy)
 }
 
 // ── Cursors ───────────────────────────────────────────────────────────────────
@@ -308,13 +289,12 @@ type EnterPhase = "wait" | "run" | "fast"
 const ENTERED_KEY = "portfolio:home-entered"
 // Safety net: never keep the page hidden longer than this waiting on assets.
 const ENTER_GATE_TIMEOUT_MS = 1000
-// Desktop scroll-controlled navigation: how long the crossfade/slide between
-// two projects takes, and therefore how long input stays locked so a single
-// wheel gesture can't fire more than one change.
-const PANEL_TRANSITION_MS = 650
-// How long the mask-reveal transition takes when opening/closing a project.
-const MASK_ENTER_MS = 600
-const MASK_EXIT_MS = 450
+// Fast, direct, subtle — the same timing drives the desktop scroll-controlled
+// project switch and the project page's open/close transition, so moving
+// between projects always feels like one consistent system. Also how long
+// input stays locked so a single wheel gesture can't fire more than one
+// change.
+const TRANSITION_MS = 200
 const REDUCED_MOTION_MS = 150
 
 function hasEnteredThisSession() {
@@ -392,7 +372,7 @@ function HomePage({
   onOpenProject,
   isActive,
 }: {
-  onOpenProject: (id: ProjectId, origin?: Point) => void
+  onOpenProject: (id: ProjectId) => void
   isActive: boolean
 }) {
   const [idx, setIdx] = useState(0)
@@ -418,7 +398,7 @@ function HomePage({
       isAnimatingRef.current = true
       window.setTimeout(() => {
         isAnimatingRef.current = false
-      }, PANEL_TRANSITION_MS)
+      }, TRANSITION_MS)
       return next
     })
   }, [])
@@ -467,7 +447,7 @@ function HomePage({
     >
       <h1
         ref={heroRef}
-        className="hero type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(465px,calc(37.5%_-_50px))] lg:bg-transparent lg:p-0"
+        className="hero type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(390px,calc(37.5%_-_50px))] lg:bg-transparent lg:p-0"
       >
         {heroWords.map((w, i) => (
           <Fragment key={i}>
@@ -511,15 +491,13 @@ function HomePage({
       {/* ── Desktop (lg+): one project fills the frame; scrolling or the arrow
           keys move to the next/previous one. Subtle opacity + a few px of
           vertical drift, no slide, no zoom — editorial, not a slideshow. ── */}
-      <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:left-[calc(37.5%_+_14px)] lg:right-[32px]">
+      <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:left-[calc(76px_+_min(390px,calc(37.5%_-_50px)))] lg:right-[32px]">
         <div
           className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-[#0B0C10]"
           style={{ cursor: hasHover ? "none" : "pointer" }}
           onMouseEnter={() => hasHover && setViewCursorVisible(true)}
           onMouseLeave={() => setViewCursorVisible(false)}
-          onClick={(e) =>
-            onOpenProject(activeProject, { x: e.clientX, y: e.clientY })
-          }
+          onClick={() => onOpenProject(activeProject)}
         >
           <div className="panel-media absolute inset-0">
             {carouselItems.map((item, i) => {
@@ -538,7 +516,7 @@ function HomePage({
                     transform: `translateY(${offset}px) scale(${
                       i === idx ? 1 : 0.985
                     })`,
-                    transition: `opacity ${PANEL_TRANSITION_MS}ms var(--ease-standard), transform ${PANEL_TRANSITION_MS}ms var(--ease-standard)`,
+                    transition: `opacity ${TRANSITION_MS}ms var(--ease-standard), transform ${TRANSITION_MS}ms var(--ease-standard)`,
                   }}
                 />
               )
@@ -561,9 +539,7 @@ function HomePage({
               backgroundColor: item.bg,
               cursor: hasHover ? "none" : "pointer",
             }}
-            onClick={(e) =>
-              onOpenProject(item.project, { x: e.clientX, y: e.clientY })
-            }
+            onClick={() => onOpenProject(item.project)}
           >
             <img
               src={item.img}
@@ -679,7 +655,7 @@ function ProjectPage({
   onClose,
 }: {
   id: ProjectId
-  onClose: (origin?: Point) => void
+  onClose: () => void
 }) {
   const [cursor, setCursor] = useState({ x: -100, y: -100 })
   const project = projects[id]
@@ -694,7 +670,7 @@ function ProjectPage({
       className="fixed inset-0 overflow-y-auto bg-white"
       style={{ cursor: hasHover ? "none" : "auto" }}
       onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
-      onClick={(e) => onClose({ x: e.clientX, y: e.clientY })}
+      onClick={onClose}
     >
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
       <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
@@ -740,13 +716,15 @@ function ProjectPage({
         className="hidden lg:flex"
         style={{ paddingTop: 32, paddingBottom: 32 }}
       >
-        {/* Left: text column — 32px gutters, image column starts at 37.5% + 14px */}
+        {/* Left: text column — same footprint as the home hero column (32px
+            left gutter, 390px cap, 44px gap), so home and project pages share
+            one consistent grid. */}
         <div
           style={{
             flexShrink: 0,
-            width: "calc(37.5% + 14px)",
+            width: "calc(76px + min(390px, calc(37.5% - 50px)))",
             paddingLeft: 32,
-            paddingRight: 32,
+            paddingRight: 44,
             paddingBottom: 32,
           }}
         >
@@ -825,16 +803,6 @@ export default function App() {
 
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
-  // Where the mask reveal grows from/collapses into — the point the user
-  // actually clicked, so opening and closing both read as "a window into the
-  // content," not a generic wipe. Falls back to the viewport center for
-  // keyboard activation or a direct deep link.
-  const [maskOrigin, setMaskOrigin] = useState<Point>(() =>
-    typeof window !== "undefined" ? viewportCenter() : { x: 0, y: 0 },
-  )
-  const [maskRadius, setMaskRadius] = useState(() =>
-    distanceToFarthestCorner(maskOrigin),
-  )
 
   useEffect(() => {
     if (overlay) {
@@ -846,7 +814,7 @@ export default function App() {
       setOverlayVisible(false)
       const t = setTimeout(
         () => setRenderedOverlay(null),
-        reducedMotion ? REDUCED_MOTION_MS : MASK_EXIT_MS,
+        reducedMotion ? REDUCED_MOTION_MS : TRANSITION_MS,
       )
       return () => clearTimeout(t)
     }
@@ -871,36 +839,26 @@ export default function App() {
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", url)
   }, [overlay])
 
-  function openProject(id: ProjectId, origin?: Point) {
-    const point = origin ?? viewportCenter()
-    setMaskOrigin(point)
-    setMaskRadius(distanceToFarthestCorner(point))
+  function openProject(id: ProjectId) {
     navigate(projectToPath[id])
   }
 
-  function closeProject(origin?: Point) {
-    const point = origin ?? viewportCenter()
-    setMaskOrigin(point)
-    setMaskRadius(distanceToFarthestCorner(point))
+  function closeProject() {
     navigate("/")
   }
 
-  // Reveal-by-mask: the project page grows out of / collapses into the click
-  // point through an expanding circular clip-path — editorial, not the usual
-  // left/right slide. `prefers-reduced-motion` swaps it for a short plain fade.
-  const maskStyle: CSSProperties = reducedMotion
+  // Smart-animate style: fast, direct, subtle — a quick scale + fade, the
+  // same 200ms both ways in and out, no slide. `prefers-reduced-motion`
+  // drops the scale and keeps a short plain fade.
+  const overlayStyle: CSSProperties = reducedMotion
     ? {
         opacity: overlayVisible ? 1 : 0,
         transition: `opacity ${REDUCED_MOTION_MS}ms linear`,
       }
     : {
-        clipPath: `circle(${
-          overlayVisible ? maskRadius : 0
-        }px at ${maskOrigin.x}px ${maskOrigin.y}px)`,
-        transition: `clip-path ${
-          overlayVisible ? MASK_ENTER_MS : MASK_EXIT_MS
-        }ms ${overlayVisible ? "var(--ease-enter)" : "var(--ease-exit)"}`,
-        willChange: "clip-path",
+        opacity: overlayVisible ? 1 : 0,
+        transform: `scale(${overlayVisible ? 1 : 0.97})`,
+        transition: `opacity ${TRANSITION_MS}ms var(--ease-standard), transform ${TRANSITION_MS}ms var(--ease-standard)`,
       }
 
   return (
@@ -917,10 +875,10 @@ export default function App() {
 
       {/* z-30: must beat the mobile sticky header's z-20, or that header's
           explicit z-index would stack it above this overlay (which has no
-          z-index of its own) regardless of DOM order, leaking through the
-          mask on mobile. */}
+          z-index of its own) regardless of DOM order, leaking through on
+          mobile. */}
       {renderedOverlay && (
-        <div className="fixed inset-0 z-30" style={maskStyle}>
+        <div className="fixed inset-0 z-30" style={overlayStyle}>
           <ProjectPage id={renderedOverlay} onClose={closeProject} />
         </div>
       )}
