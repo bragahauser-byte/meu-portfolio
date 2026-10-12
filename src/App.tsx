@@ -279,23 +279,39 @@ const heroWords: HeroWord[] = [
 ]
 
 const footerLinks = [
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/gabriel-bragaa/" },
-  { label: "MEDIUM", href: "https://medium.com/@bragahauser" },
-  { label: "GITHUB", href: "https://github.com/bragahauser-byte" },
+  { label: "Linkedin", href: "https://www.linkedin.com/in/gabriel-bragaa/" },
+  { label: "Medium", href: "https://medium.com/@bragahauser" },
+  { label: "Github", href: "https://github.com/bragahauser-byte" },
 ]
+
+// Where a desktop project transition starts: the on-screen box of the image
+// being flown and which image it shows.
+type FlightOrigin = { rect: DOMRect; img: string }
 
 type EnterPhase = "wait" | "run" | "fast"
 
 const ENTERED_KEY = "portfolio:home-entered"
 // Safety net: never keep the page hidden longer than this waiting on assets.
 const ENTER_GATE_TIMEOUT_MS = 1000
-// Fast, direct, subtle — the same timing drives the desktop scroll-controlled
-// project switch and the project page's open/close transition, so moving
-// between projects always feels like one consistent system. Also how long
-// input stays locked so a single wheel gesture can't fire more than one
-// change.
+// Fallback open/close for the project overlay (mobile, direct links, browser
+// back): a quick scale + fade.
 const TRANSITION_MS = 200
 const REDUCED_MOTION_MS = 150
+
+// Desktop scroll between projects: the current image fades to white, then the
+// new one fades in — fade, white, fade. Input stays locked for the whole
+// sequence so a single wheel gesture can't fire more than one change.
+const SWAP_OUT_MS = 110
+const SWAP_IN_MS = 170
+const SWAP_LOCK_MS = SWAP_OUT_MS + SWAP_IN_MS
+
+// Desktop home ↔ project: the card grows from the home frame to the project's
+// first image (its left edge travels right → left) while the text on the left
+// swaps with a short fade.
+const FLIGHT_MS = 520
+const FLIGHT_EASE = "cubic-bezier(0.6, 0, 0.2, 1)"
+// When the incoming text starts fading in, relative to the flight's start.
+const FLIGHT_TEXT_IN_MS = 300
 
 function hasEnteredThisSession() {
   try {
@@ -371,9 +387,15 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
 function HomePage({
   onOpenProject,
   isActive,
+  chromeVisible,
+  panelHidden,
 }: {
-  onOpenProject: (id: ProjectId) => void
+  onOpenProject: (id: ProjectId, origin?: FlightOrigin) => void
   isActive: boolean
+  // hero, footer and image counter — faded out while a project is open
+  chromeVisible: boolean
+  // the image frame itself — hidden while its flying copy is on screen
+  panelHidden: boolean
 }) {
   const [idx, setIdx] = useState(0)
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
@@ -386,6 +408,7 @@ function HomePage({
   // Synchronous lock (not state) so a burst of wheel events arriving in the
   // same tick can never slip past the check before the first one lands.
   const isAnimatingRef = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   const goTo = useCallback((delta: 1 | -1) => {
     if (isAnimatingRef.current) return
@@ -398,7 +421,19 @@ function HomePage({
       isAnimatingRef.current = true
       window.setTimeout(() => {
         isAnimatingRef.current = false
-      }, TRANSITION_MS)
+      }, SWAP_LOCK_MS)
+      return next
+    })
+  }, [])
+
+  const goToIndex = useCallback((next: number) => {
+    if (isAnimatingRef.current) return
+    setIdx((current) => {
+      if (next === current) return current
+      isAnimatingRef.current = true
+      window.setTimeout(() => {
+        isAnimatingRef.current = false
+      }, SWAP_LOCK_MS)
       return next
     })
   }, [])
@@ -433,6 +468,15 @@ function HomePage({
 
   const activeProject = carouselItems[idx].project
 
+  const openActive = () => {
+    setViewCursorVisible(false)
+    const rect = panelRef.current?.getBoundingClientRect()
+    onOpenProject(
+      activeProject,
+      rect ? { rect, img: carouselItems[idx].img } : undefined,
+    )
+  }
+
   return (
     // Two different "media" blocks below (desktop scroll-panel / mobile
     // vertical gallery) are shown one at a time via `hidden lg:block` /
@@ -442,12 +486,16 @@ function HomePage({
     <div
       className="home relative w-full min-h-[100svh] bg-white lg:h-full lg:min-h-0"
       data-enter={phase}
+      data-chrome={chromeVisible ? "visible" : "hidden"}
       onMouseMove={handleMouseMove}
       style={{ cursor: hasHover ? "none" : "auto" }}
     >
+      {/* Desktop width: 428px (Figma), never reaching into the counter's
+          column — viewport minus image, 3×32px gaps/margins, the 8px counter
+          and 32px of air before it. */}
       <h1
         ref={heroRef}
-        className="hero type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(390px,calc(37.5%_-_50px))] lg:bg-transparent lg:p-0"
+        className="hero home-chrome type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(428px,calc(100vw_-_var(--home-img-w)_-_136px))] lg:bg-transparent lg:p-0"
       >
         {heroWords.map((w, i) => (
           <Fragment key={i}>
@@ -458,7 +506,7 @@ function HomePage({
                 {
                   // gray copy trails the dark copy by half a step
                   "--i": (lines[i] ?? 0) + (w.tone === "gray" ? 0.5 : 0),
-                  color: w.tone === "gray" ? "#747474" : "#1A1A1A",
+                  color: w.tone === "gray" ? "#757575" : "#1A1A1A",
                 } as CSSProperties
               }
             >
@@ -488,40 +536,66 @@ function HomePage({
         ))}
       </h1>
 
-      {/* ── Desktop (lg+): one project fills the frame; scrolling or the arrow
-          keys move to the next/previous one. Subtle opacity + a few px of
-          vertical drift, no slide, no zoom — editorial, not a slideshow. ── */}
-      <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:left-[calc(76px_+_min(390px,calc(37.5%_-_50px)))] lg:right-[32px]">
+      {/* ── Desktop (lg+): one project fills the frame (1074×1016 at 1920,
+          32px from the top/right/bottom); scrolling or the arrow keys move
+          to the next/previous one — fade out to white, fade the new one in. */}
+      <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:right-[32px] lg:w-[var(--home-img-w)]">
         <div
-          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-[#0B0C10]"
-          style={{ cursor: hasHover ? "none" : "pointer" }}
+          ref={panelRef}
+          data-home-panel
+          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-white"
+          style={{
+            cursor: hasHover ? "none" : "pointer",
+            visibility: panelHidden ? "hidden" : "visible",
+          }}
           onMouseEnter={() => hasHover && setViewCursorVisible(true)}
           onMouseLeave={() => setViewCursorVisible(false)}
-          onClick={() => onOpenProject(activeProject)}
+          onClick={openActive}
         >
           <div className="panel-media absolute inset-0">
-            {carouselItems.map((item, i) => {
-              const offset = i === idx ? 0 : i > idx ? 10 : -10
-              return (
-                <img
-                  key={i}
-                  src={item.img}
-                  alt=""
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={i === 0 ? "high" : "low"}
-                  className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
-                  style={{
-                    opacity: i === idx ? 1 : 0,
-                    transform: `translateY(${offset}px) scale(${
-                      i === idx ? 1 : 0.985
-                    })`,
-                    transition: `opacity ${TRANSITION_MS}ms var(--ease-standard), transform ${TRANSITION_MS}ms var(--ease-standard)`,
-                  }}
-                />
-              )
-            })}
+            {carouselItems.map((item, i) => (
+              <img
+                key={i}
+                src={item.img}
+                alt=""
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={i === 0 ? "high" : "low"}
+                data-active={i === idx}
+                className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
+                style={{
+                  opacity: i === idx ? 1 : 0,
+                  // incoming waits for the outgoing to clear: fade → white → fade
+                  transition:
+                    i === idx
+                      ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
+                      : `opacity ${SWAP_OUT_MS}ms linear`,
+                }}
+              />
+            ))}
           </div>
+        </div>
+      </div>
+
+      {/* Image counter: one 8px dot per home image, 12px apart, vertically
+          centred, 32px to the left of the frame. */}
+      <div className="home-chrome hidden lg:block lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-[calc(64px_+_var(--home-img-w))] lg:w-2">
+        <div className="dots flex flex-col gap-[12px]" aria-label="Projetos">
+          {carouselItems.map((item, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`${projects[item.project].title} ${i + 1} de ${carouselItems.length}`}
+              aria-current={i === idx ? "true" : undefined}
+              className="block size-2 rounded-full p-0 border-0"
+              style={{
+                backgroundColor: i === idx ? "#000000" : "#D9D9D9",
+                transition: `background-color ${SWAP_LOCK_MS}ms var(--ease-standard)`,
+                cursor: hasHover ? "none" : "pointer",
+              }}
+              onClick={() => goToIndex(i)}
+            />
+          ))}
         </div>
       </div>
 
@@ -556,7 +630,7 @@ function HomePage({
 
       <nav
         aria-label="Links externos"
-        className="footer type-footer flex flex-wrap gap-x-[2.5em] gap-y-2 px-4 pb-10 text-[#1A1A1A] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:flex-nowrap lg:gap-x-[4.0833em] lg:px-0 lg:pb-0"
+        className="footer home-chrome type-footer flex flex-wrap gap-x-[40px] gap-y-2 px-4 pb-10 text-[#1A1A1A] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:flex-nowrap lg:px-0 lg:pb-0"
         style={{ "--u-bottom": "-0.1em" } as CSSProperties}
       >
         {footerLinks.map((l, i) => (
@@ -650,39 +724,82 @@ function useStickyTop(ref: RefObject<HTMLElement | null>, margin = 32) {
   return top
 }
 
+// The project image the visitor is mostly looking at — where the closing
+// flight takes off from.
+function mostVisibleProjectImage(root: HTMLElement): FlightOrigin | null {
+  let best: FlightOrigin | null = null
+  let bestVisible = 0
+  for (const img of root.querySelectorAll<HTMLImageElement>(
+    "img[data-project-media]",
+  )) {
+    const rect = img.parentElement!.getBoundingClientRect()
+    const visible =
+      Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
+    if (visible > bestVisible) {
+      bestVisible = visible
+      best = { rect, img: img.currentSrc || img.src }
+    }
+  }
+  return best
+}
+
 function ProjectPage({
   id,
   onClose,
+  backdropVisible = true,
+  mediaVisible = true,
+  textVisible = true,
 }: {
   id: ProjectId
-  onClose: () => void
+  onClose: (origin?: FlightOrigin) => void
+  // During the desktop flight the page shows only its text: the white
+  // backdrop and images stay off so the flying card and the Home beneath
+  // read as one surface.
+  backdropVisible?: boolean
+  mediaVisible?: boolean
+  textVisible?: boolean
 }) {
   const [cursor, setCursor] = useState({ x: -100, y: -100 })
   const project = projects[id]
   const textBlockRef = useRef<HTMLDivElement>(null)
+  const desktopMediaRef = useRef<HTMLDivElement>(null)
   const stickyTop = useStickyTop(textBlockRef)
   const hasHover = useHasHover()
+
+  const textStyle: CSSProperties = {
+    opacity: textVisible ? 1 : 0,
+    transition: `opacity ${textVisible ? 260 : 140}ms var(--ease-standard)`,
+  }
 
   return (
     // fixed inset-0 so the overlay always covers the full viewport, regardless
     // of whatever scroll position the Home page (behind it) is at.
     <div
-      className="fixed inset-0 overflow-y-auto bg-white"
-      style={{ cursor: hasHover ? "none" : "auto" }}
+      className="fixed inset-0 overflow-y-auto"
+      style={{
+        cursor: hasHover ? "none" : "auto",
+        backgroundColor: backdropVisible ? "#FFFFFF" : "transparent",
+      }}
       onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
-      onClick={onClose}
+      onClick={() => {
+        const media = desktopMediaRef.current
+        // offsetParent is null while the desktop layout is display:none
+        onClose(
+          media?.offsetParent ? mostVisibleProjectImage(media) ?? undefined : undefined,
+        )
+      }}
     >
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
       <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
         <div>
           <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
-          <p className="type-title m-0 text-[#747474]">{project.subtitle}</p>
+          <p className="type-title m-0 text-[#757575]">{project.subtitle}</p>
         </div>
-        <div className="flex flex-col gap-[24px]">
+        <div className="flex flex-col gap-[28px]">
           {project.paragraphs.map((p, i) => (
             <p
               key={i}
-              className="type-body m-0 text-justify text-[#333333] [word-break:break-word]"
+              className="type-body m-0 text-[#333333] [word-break:break-word]"
             >
               {p}
             </p>
@@ -716,36 +833,33 @@ function ProjectPage({
         className="hidden lg:flex"
         style={{ paddingTop: 32, paddingBottom: 32 }}
       >
-        {/* Left: text column — same footprint as the home hero column (32px
-            left gutter, 390px cap, 44px gap), so home and project pages share
-            one consistent grid. */}
+        {/* Left: text column — 437px at 1920 (Figma), 32px from the screen
+            edge and 32px from the images. */}
         <div
           style={{
             flexShrink: 0,
-            width: "calc(76px + min(390px, calc(37.5% - 50px)))",
+            width: "calc(64px + var(--proj-col))",
             paddingLeft: 32,
-            paddingRight: 44,
+            paddingRight: 32,
             paddingBottom: 32,
           }}
         >
           <div
             ref={textBlockRef}
-            style={{ position: "sticky", top: stickyTop }}
+            style={{ position: "sticky", top: stickyTop, ...textStyle }}
           >
-            <div style={{ marginBottom: "min(198px, 18.33vh)" }}>
+            {/* Body starts at y=251 in the 1080px frame: 32 + 64 + 155. */}
+            <div style={{ marginBottom: "min(155px, 14.35vh)" }}>
               <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
-              <p className="type-title m-0 text-[#747474]">
+              <p className="type-title m-0 text-[#757575]">
                 {project.subtitle}
               </p>
             </div>
-            <div
-              className="flex flex-col"
-              style={{ gap: "clamp(24px, 1.6667vw, 32px)" }}
-            >
+            <div className="flex flex-col gap-[28px]">
               {project.paragraphs.map((p, i) => (
                 <p
                   key={i}
-                  className="type-body m-0 text-justify text-[#333333] [word-break:break-word]"
+                  className="type-body m-0 text-[#333333] [word-break:break-word]"
                 >
                   {p}
                 </p>
@@ -757,7 +871,11 @@ function ProjectPage({
         {/* Right: image catalog — natural flow, scrolls with the single scroll.
             Each image fills the viewport minus the 32px top/bottom margins. */}
         <div style={{ flex: 1, paddingRight: 32 }}>
-          <div className="flex flex-col gap-[32px]">
+          <div
+            ref={desktopMediaRef}
+            className="flex flex-col gap-[32px]"
+            style={{ visibility: mediaVisible ? "visible" : "hidden" }}
+          >
             {project.images.map((img, i) => (
               <div
                 key={i}
@@ -767,6 +885,7 @@ function ProjectPage({
                 <img
                   src={img}
                   alt=""
+                  data-project-media={i}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
@@ -794,23 +913,149 @@ const projectToPath: Record<ProjectId, string> = {
   playstation: "/playstation-connect",
 }
 
+// ── Home ↔ project flight (desktop) ──────────────────────────────────────────
+// A fixed copy of the image travels from where it is to where it lands: the
+// home frame grows into the project's first image (only its left edge moves,
+// right → left) and shrinks back on close. If the two pictures differ, the
+// landing one fades in over the last stretch so the hand-off is seamless.
+type FlightKind = "open" | "close"
+
+function absoluteUrl(src: string) {
+  return new URL(src, window.location.href).href
+}
+
+function Flight({
+  kind,
+  from,
+  fromImg,
+  onDone,
+}: {
+  kind: FlightKind
+  from: DOMRect
+  fromImg: string
+  onDone: () => void
+}) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const toImgRef = useRef<HTMLImageElement>(null)
+
+  useLayoutEffect(() => {
+    const box = boxRef.current
+    const toImgEl = toImgRef.current
+    const landingImg =
+      kind === "open"
+        ? document.querySelector<HTMLImageElement>('img[data-project-media="0"]')
+        : document.querySelector<HTMLImageElement>(
+            '[data-home-panel] img[data-active="true"]',
+          )
+    const landingBox =
+      kind === "open"
+        ? landingImg?.parentElement
+        : document.querySelector<HTMLElement>("[data-home-panel]")
+    if (!box || !toImgEl || !landingImg || !landingBox) {
+      onDone()
+      return
+    }
+
+    const to = landingBox.getBoundingClientRect()
+    const rect = (r: DOMRect) => ({
+      left: `${r.left}px`,
+      top: `${r.top}px`,
+      width: `${r.width}px`,
+      height: `${r.height}px`,
+    })
+    const move = box.animate([rect(from), rect(to)], {
+      duration: FLIGHT_MS,
+      easing: FLIGHT_EASE,
+      fill: "forwards",
+    })
+    const anims = [move]
+
+    const landingSrc = landingImg.currentSrc || landingImg.src
+    if (absoluteUrl(landingSrc) !== absoluteUrl(fromImg)) {
+      toImgEl.src = landingSrc
+      anims.push(
+        toImgEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 240,
+          delay: FLIGHT_MS - 280,
+          easing: "linear",
+          fill: "both",
+        }),
+      )
+    }
+
+    move.onfinish = () => onDone()
+    return () => anims.forEach((a) => a.cancel())
+    // runs once per flight; the parent remounts it (key) for a new one
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div
+      ref={boxRef}
+      aria-hidden="true"
+      className="pointer-events-none fixed z-40 overflow-hidden rounded-[12px] bg-white"
+      style={{
+        left: from.left,
+        top: from.top,
+        width: from.width,
+        height: from.height,
+      }}
+    >
+      <img
+        src={fromImg}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover select-none"
+      />
+      <img
+        ref={toImgRef}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover select-none"
+        style={{ opacity: 0 }}
+      />
+    </div>
+  )
+}
+
+type Stage = "idle" | "opening" | "open" | "closing"
+
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const cleanPath = location.pathname.replace(/\/$/, "") || "/"
   const overlay = pathToProject[cleanPath] ?? null
   const reducedMotion = usePrefersReducedMotion()
+  const isDesktop = useIsDesktop()
 
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
 
+  // Desktop flight between home and project. `stage` is "idle" whenever no
+  // flight-opened project is on screen (including the plain-fade fallback).
+  const [stage, setStage] = useState<Stage>("idle")
+  const [flight, setFlight] = useState<{
+    kind: FlightKind
+    from: DOMRect
+    fromImg: string
+    key: number
+  } | null>(null)
+  const [projectTextIn, setProjectTextIn] = useState(false)
+  const [homeChromeIn, setHomeChromeIn] = useState(false)
+  const timerRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), [])
+
   useEffect(() => {
     if (overlay) {
+      // the flight already mounted the page itself
+      if (stage === "opening") return
       setRenderedOverlay(overlay)
       requestAnimationFrame(() =>
         requestAnimationFrame(() => setOverlayVisible(true)),
       )
     } else if (renderedOverlay) {
+      // e.g. browser back while a project is open: plain fade out
+      setStage("idle")
+      setFlight(null)
       setOverlayVisible(false)
       const t = setTimeout(
         () => setRenderedOverlay(null),
@@ -839,12 +1084,57 @@ export default function App() {
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", url)
   }, [overlay])
 
-  function openProject(id: ProjectId) {
+  const canFly = isDesktop && !reducedMotion
+
+  function openProject(id: ProjectId, origin?: FlightOrigin) {
+    if (stage !== "idle") return
+    if (origin && canFly) {
+      setRenderedOverlay(id)
+      setOverlayVisible(true)
+      setProjectTextIn(false)
+      setStage("opening")
+      setFlight({ kind: "open", ...originToFlight(origin) })
+      window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(
+        () => setProjectTextIn(true),
+        FLIGHT_TEXT_IN_MS,
+      )
+    }
     navigate(projectToPath[id])
   }
 
-  function closeProject() {
+  function closeProject(origin?: FlightOrigin) {
+    if (stage === "opening" || stage === "closing") return
+    if (origin && canFly) {
+      setHomeChromeIn(false)
+      setStage("closing")
+      setFlight({ kind: "close", ...originToFlight(origin) })
+      window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(
+        () => setHomeChromeIn(true),
+        FLIGHT_MS * 0.55,
+      )
+      return // the route changes once the card has landed
+    }
     navigate("/")
+  }
+
+  function originToFlight(origin: FlightOrigin) {
+    return { from: origin.rect, fromImg: origin.img, key: Date.now() }
+  }
+
+  function handleFlightDone(kind: FlightKind) {
+    setFlight(null)
+    if (kind === "open") {
+      setProjectTextIn(true)
+      setStage("open")
+    } else {
+      setRenderedOverlay(null)
+      setOverlayVisible(false)
+      setHomeChromeIn(false)
+      setStage("idle")
+      navigate("/")
+    }
   }
 
   // Smart-animate style: fast, direct, subtle — a quick scale + fade, the
@@ -870,7 +1160,14 @@ export default function App() {
     // is still correct at `lg`, where nothing should scroll at all.
     <div className="relative min-h-[100svh] lg:fixed lg:inset-0 lg:overflow-hidden lg:min-h-0 bg-white">
       <div className="relative lg:absolute lg:inset-0">
-        <HomePage onOpenProject={openProject} isActive={!overlay} />
+        <HomePage
+          onOpenProject={openProject}
+          isActive={!overlay && stage === "idle"}
+          chromeVisible={
+            stage === "idle" || (stage === "closing" && homeChromeIn)
+          }
+          panelHidden={stage !== "idle"}
+        />
       </div>
 
       {/* z-30: must beat the mobile sticky header's z-20, or that header's
@@ -878,9 +1175,34 @@ export default function App() {
           z-index of its own) regardless of DOM order, leaking through on
           mobile. */}
       {renderedOverlay && (
-        <div className="fixed inset-0 z-30" style={overlayStyle}>
-          <ProjectPage id={renderedOverlay} onClose={closeProject} />
+        <div
+          className="fixed inset-0 z-30"
+          style={
+            stage === "idle" ? overlayStyle : { pointerEvents: "auto" }
+          }
+        >
+          <ProjectPage
+            id={renderedOverlay}
+            onClose={closeProject}
+            backdropVisible={stage === "idle" || stage === "open"}
+            mediaVisible={stage === "idle" || stage === "open"}
+            textVisible={
+              stage === "idle" ||
+              stage === "open" ||
+              (stage === "opening" && projectTextIn)
+            }
+          />
         </div>
+      )}
+
+      {flight && (
+        <Flight
+          key={flight.key}
+          kind={flight.kind}
+          from={flight.from}
+          fromImg={flight.fromImg}
+          onDone={() => handleFlightDone(flight.kind)}
+        />
       )}
     </div>
   )

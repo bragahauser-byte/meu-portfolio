@@ -12,6 +12,15 @@
   font-display: swap;
 }
 
+/* PP Neue Montreal Book — só nos títulos das páginas de projeto (Figma). */
+@font-face {
+  font-family: 'PP Neue Montreal';
+  src: url('./assets/fonts/ppneuemontreal-book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --font-sans: 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -44,6 +53,11 @@ html, body, #root {
   --dy-footer: 8px;
 
   --link-hover: #DB224D;
+
+  /* Grade desktop (frame de 1920px do Figma): imagem da home 1074px de
+     largura; coluna de texto do projeto 437px, imagem começando em 501px. */
+  --home-img-w: 55.9375vw;
+  --proj-col: clamp(340px, 22.76vw, 437px);
 }
 
 @media (max-width: 1023px) {
@@ -103,7 +117,7 @@ html, body, #root {
 @keyframes footer-in { from { opacity: 0; transform: translateY(var(--dy-footer)); } }
 @keyframes fade-in   { from { opacity: 0; } }
 
-.home[data-enter='wait'] :is(.hero-word, .panel, .panel-media, .footer-link) {
+.home[data-enter='wait'] :is(.hero-word, .panel, .panel-media, .footer-link, .dots) {
   opacity: 0;
 }
 
@@ -125,15 +139,32 @@ html, body, #root {
   animation: footer-in 400ms var(--ease-enter) calc(600ms + var(--i, 0) * 60ms) both;
 }
 
+/* 5. Contador de imagens — junto com o rodapé, só fade */
+.home[data-enter='run'] .dots {
+  animation: fade-in 400ms var(--ease-enter) 600ms both;
+}
+
 /* Visitas seguintes: fade curto, sem deslocamento */
-.home[data-enter='fast'] :is(.hero-word, .panel, .panel-media, .footer-link) {
+.home[data-enter='fast'] :is(.hero-word, .panel, .panel-media, .footer-link, .dots) {
   animation: fade-in 200ms linear both;
+}
+
+/* ── Home ↔ projeto ───────────────────────────────────────────────────────────
+   Enquanto o card voa entre as telas, o texto da home (hero, rodapé,
+   contador) some rápido e volta com um fade sutil no fechamento. */
+.home-chrome {
+  transition: opacity 260ms var(--ease-standard);
+}
+.home[data-chrome='hidden'] .home-chrome {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 140ms;
 }
 
 /* Acessibilidade: sem movimento (nem translate nem scale), só fade simples de
    300ms, sem delays, linear. Reduzir movimento não esconde conteúdo. */
 @media (prefers-reduced-motion: reduce) {
-  .home[data-enter] :is(.hero-word, .panel, .panel-media, .footer-link) {
+  .home[data-enter] :is(.hero-word, .panel, .panel-media, .footer-link, .dots) {
     animation: fade-in 300ms linear 0ms both !important;
   }
   .link-underline,
@@ -142,17 +173,23 @@ html, body, #root {
   }
 }
 
-/* ── Escala tipográfica (Plus Jakarta Sans) ──────────────────────────────────
-   Valores do Figma no frame de 1920px: hero e título 24/32, rodapé 20/20
-   (tracking -0.04em) — fixos, não escalam com a viewport. O corpo de texto
-   dos projetos é a única exceção com piso: 16/28 (tracking 0.004em) sempre,
-   em qualquer breakpoint — nunca deve crescer além de 16px. */
+/* ── Escala tipográfica ───────────────────────────────────────────────────────
+   Valores do Figma no frame de 1920px: hero 24/32 e rodapé 20/20 (tracking
+   -0.04em, ligaduras 'dlig') em Plus Jakarta Sans; título do projeto 28/32
+   em PP Neue Montreal; corpo 16/28 (tracking 0.004em) em qualquer
+   breakpoint — nunca cresce além de 16px. */
 .type-hero   { font-size: 24px; line-height: 29px; letter-spacing: 0.001em; }
-.type-title  { font-size: 20px; line-height: 24px; letter-spacing: 0.001em; }
+.type-title  {
+  font-family: 'PP Neue Montreal', var(--font-sans);
+  font-size: 22px; line-height: 26px; letter-spacing: 0.001em;
+}
 .type-body   { font-size: 16px; line-height: 28px; letter-spacing: 0.004em; }
-.type-footer { font-size: 20px; line-height: 20px; letter-spacing: -0.04em; }
+.type-footer {
+  font-size: 20px; line-height: 20px; letter-spacing: -0.04em;
+  font-feature-settings: 'dlig' on;
+}
 
 @media (min-width: 1024px) {
   .type-hero   { font-size: 24px; line-height: 32px; }
-  .type-title  { font-size: 24px; line-height: 32px; }
+  .type-title  { font-size: 28px; line-height: 32px; }
 }
