@@ -169,16 +169,16 @@ function CloseCursor({ x, y }: { x: number; y: number }) {
       className="pointer-events-none fixed z-[9999]"
       style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
     >
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" className="text-label">
         <path
           d="M3 3L19 19"
-          stroke="#1a1a1a"
+          stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
         />
         <path
           d="M19 3L3 19"
-          stroke="#1a1a1a"
+          stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
         />
@@ -244,7 +244,7 @@ function HomePageCursor({
           width: 20,
           height: 20,
           // same color + timing as the link hover, so dot and text change together
-          backgroundColor: overLink ? "var(--link-hover)" : "#000",
+          backgroundColor: overLink ? "var(--link-hover)" : "var(--c-label)",
           transition: "background-color 150ms var(--ease-standard)",
         }}
       />
@@ -299,7 +299,7 @@ const TRANSITION_MS = 200
 const REDUCED_MOTION_MS = 150
 
 // Desktop scroll between projects: the current image fades out to the dark
-// frame (#1A1A1A), then the new one fades in — fade, dark, fade. Input stays
+// frame (--c-media), then the new one fades in — fade, dark, fade. Input stays
 // locked for the whole sequence so a single wheel gesture can't fire more
 // than one change.
 const SWAP_OUT_MS = 110
@@ -507,7 +507,7 @@ function HomePage({
                 {
                   // gray copy trails the dark copy by half a step
                   "--i": (lines[i] ?? 0) + (w.tone === "gray" ? 0.5 : 0),
-                  color: w.tone === "gray" ? "#757575" : "#1A1A1A",
+                  color: w.tone === "gray" ? "var(--c-secondary)" : "var(--c-label)",
                 } as CSSProperties
               }
             >
@@ -539,12 +539,12 @@ function HomePage({
 
       {/* ── Desktop (lg+): one project fills the frame (1074×1016 at 1920,
           32px from the top/right/bottom); scrolling or the arrow keys move
-          to the next/previous one — fade out to #1A1A1A, fade the new one in. */}
+          to the next/previous one — fade out to the media tone (--c-media), fade the new one in. */}
       <div className="hidden lg:block lg:absolute lg:top-[32px] lg:bottom-[32px] lg:right-[32px] lg:w-[var(--home-img-w)]">
         <div
           ref={panelRef}
           data-home-panel
-          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-[#1A1A1A]"
+          className="panel relative h-full w-full overflow-hidden rounded-[12px] bg-media"
           style={{
             cursor: hasHover ? "none" : "pointer",
             visibility: panelHidden ? "hidden" : "visible",
@@ -566,7 +566,7 @@ function HomePage({
                 className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
                 style={{
                   opacity: i === idx ? 1 : 0,
-                  // incoming waits for the outgoing to clear: fade → #1A1A1A → fade
+                  // incoming waits for the outgoing to clear: fade → --c-media → fade
                   transition:
                     i === idx
                       ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
@@ -588,12 +588,13 @@ function HomePage({
               type="button"
               aria-label={`${projects[item.project].title} ${i + 1} de ${carouselItems.length}`}
               aria-current={i === idx ? "true" : undefined}
-              className="block size-1.5 rounded-full p-0 border-0"
-              style={{
-                backgroundColor: i === idx ? "#1A1A1A" : "#757575",
-                transition: `background-color ${SWAP_LOCK_MS}ms var(--ease-standard)`,
-                cursor: hasHover ? "none" : "pointer",
-              }}
+              className="dot"
+              style={
+                {
+                  "--dot-ms": `${SWAP_LOCK_MS}ms`,
+                  cursor: hasHover ? "none" : "pointer",
+                } as CSSProperties
+              }
               onClick={() => goToIndex(i)}
             />
           ))}
@@ -631,23 +632,28 @@ function HomePage({
 
       <nav
         aria-label="Links externos"
-        className="footer home-chrome type-footer flex flex-wrap gap-x-[40px] gap-y-2 px-4 pb-10 text-[#1A1A1A] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:flex-nowrap lg:px-0 lg:pb-0"
-        style={{ "--u-bottom": "-0.1em" } as CSSProperties}
+        className="footer home-chrome type-footer mx-4 mt-12 border-t border-separator pt-[13px] pb-[calc(32px+env(safe-area-inset-bottom))] text-label [--u-bottom:calc(11px_-_0.1em)] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:m-0 lg:border-0 lg:p-0 lg:[--u-bottom:-0.1em]"
       >
-        {footerLinks.map((l, i) => (
-          <a
-            key={l.label}
-            href={l.href}
-            target="_blank"
-            rel="noreferrer"
-            className="footer-link link-underline"
-            style={
-              { cursor: hasHover ? "none" : "auto", "--i": i } as CSSProperties
-            }
-          >
-            {l.label}
-          </a>
-        ))}
+        {/* Mobile: 3 links in one row; 22px line + 11px padding top/bottom = 44px touch target (the underline offset above compensates). Desktop: as before. */}
+        <div className="flex flex-nowrap justify-between lg:justify-start lg:gap-x-[40px]">
+          {footerLinks.map((l, i) => (
+            <a
+              key={l.label}
+              href={l.href}
+              target="_blank"
+              rel="noreferrer"
+              className="footer-link link-underline py-[11px] lg:py-0"
+              style={
+                { cursor: hasHover ? "none" : "auto", "--i": i } as CSSProperties
+              }
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <p className="m-0 mt-[5px] text-[12px] leading-[16px] tracking-normal text-secondary lg:hidden">
+          © 2026 Gabriel Braga
+        </p>
       </nav>
 
       <p className="sr-only">
@@ -779,7 +785,7 @@ function ProjectPage({
       className="fixed inset-0 overflow-y-auto"
       style={{
         cursor: hasHover ? "none" : "auto",
-        backgroundColor: backdropVisible ? "#FFFFFF" : "transparent",
+        backgroundColor: backdropVisible ? "var(--c-bg)" : "transparent",
       }}
       onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
       onClick={() => {
@@ -793,14 +799,14 @@ function ProjectPage({
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
       <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
         <div>
-          <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
-          <p className="type-title m-0 text-[#757575]">{project.subtitle}</p>
+          <p className="type-title m-0 text-label">{project.title}</p>
+          <p className="type-title m-0 text-secondary">{project.subtitle}</p>
         </div>
         <div className="flex flex-col gap-[28px]">
           {project.paragraphs.map((p, i) => (
             <p
               key={i}
-              className="type-body m-0 text-[#333333] [word-break:break-word]"
+              className="type-body m-0 text-body [word-break:break-word]"
             >
               {p}
             </p>
@@ -851,8 +857,8 @@ function ProjectPage({
           >
             {/* Body starts at y=251 in the 1080px frame: 32 + 64 + 155. */}
             <div style={{ marginBottom: "min(155px, 14.35vh)" }}>
-              <p className="type-title m-0 text-[#1A1A1A]">{project.title}</p>
-              <p className="type-title m-0 text-[#757575]">
+              <p className="type-title m-0 text-label">{project.title}</p>
+              <p className="type-title m-0 text-secondary">
                 {project.subtitle}
               </p>
             </div>
@@ -860,7 +866,7 @@ function ProjectPage({
               {project.paragraphs.map((p, i) => (
                 <p
                   key={i}
-                  className="type-body m-0 text-[#333333] [word-break:break-word]"
+                  className="type-body m-0 text-body [word-break:break-word]"
                 >
                   {p}
                 </p>
@@ -994,7 +1000,7 @@ function Flight({
     <div
       ref={boxRef}
       aria-hidden="true"
-      className="pointer-events-none fixed z-40 overflow-hidden rounded-[12px] bg-[#1A1A1A]"
+      className="pointer-events-none fixed z-40 overflow-hidden rounded-[12px] bg-media"
       style={{
         left: from.left,
         top: from.top,

@@ -23,6 +23,16 @@
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Tokens de cor como classes Tailwind (text-label, text-secondary, bg-fill…).
+     Mesmos valores do :root abaixo. */
+  --color-label: #1D1D1F;
+  --color-body: #424245;
+  --color-secondary: #6E6E73;
+  --color-tertiary: #86868B;
+  --color-separator: #D2D2D7;
+  --color-fill: #F5F5F7;
+  --color-media: #1D1D1F;
+  --color-accent: #DB2223;
 }
 
 *, *::before, *::after {
@@ -52,7 +62,17 @@ html, body, #root {
   --dy-media: 24px;
   --dy-footer: 8px;
 
-  --link-hover: #FF3334;
+  /* ── Cor (sistema Apple) ── 3 tons principais + 2 de apoio + 1 destaque */
+  --c-label:      #1D1D1F; /* preto Apple — títulos, nome no hero, links do rodapé */
+  --c-body:       #424245; /* parágrafos longos (corpo dos cases) */
+  --c-secondary:  #6E6E73; /* cinza Apple — subtítulos, parte cinza do hero (5.1:1 no branco) */
+  --c-tertiary:   #86868B; /* só elementos pequenos/não-texto: ponto ativo do contador, ícones */
+  --c-separator:  #D2D2D7; /* linhas, bordas, pontos inativos */
+  --c-fill:       #F5F5F7; /* branco Apple — fundos de bloco/placeholder de imagem clara */
+  --c-bg:         #FFFFFF; /* fundo da página */
+  --c-media:      #1D1D1F; /* fundo do painel escuro da home (troca de imagem) */
+  --c-accent:     #DB2223; /* vermelho Work & Co — hover/focus de links (4.9:1, passa AA) */
+  --link-hover:   var(--c-accent);
 
   /* Grade desktop (frame de 1920px do Figma): imagem da home 1074px de
      largura; coluna de texto do projeto 437px, imagem começando em 501px. */
@@ -185,11 +205,38 @@ html, body, #root {
 }
 .type-body   { font-size: 16px; line-height: 28px; letter-spacing: 0.004em; }
 .type-footer {
-  font-size: 20px; line-height: 20px; letter-spacing: -0.04em;
+  /* mobile: 17/22, corpo padrão da Apple; volta para 20/20 no desktop */
+  font-size: 17px; line-height: 22px; letter-spacing: -0.04em;
   font-feature-settings: 'dlig' on;
 }
 
 @media (min-width: 1024px) {
   .type-hero   { font-size: 24px; line-height: 32px; }
   .type-title  { font-size: 28px; line-height: 32px; }
+  .type-footer { font-size: 20px; line-height: 20px; }
 }
+
+/* ── Contador de imagens da home ──────────────────────────────────────────────
+   Cada botão tem 18×18px de área de clique (padding 6px, compensado com
+   margin -6px para não mudar o espaçamento); o ponto visível de 6px é um
+   ::before. Inativo = separator, ativo = tertiary: discreto, só o atual
+   se destaca. */
+.dot {
+  display: block;
+  padding: 6px;
+  margin: -6px;
+  border: 0;
+  background: transparent;
+}
+.dot::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--c-separator);
+  transition: background-color var(--dot-ms, 0ms) var(--ease-standard);
+}
+.dot[aria-current='true']::before { background: var(--c-tertiary); }
+.dot:focus-visible { outline: none; }
+.dot:focus-visible::before { background: var(--c-accent); }
