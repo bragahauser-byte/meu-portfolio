@@ -23,5 +23,31 @@
       "title": "Soundroom — UX/UI Case Study | Gabriel Braga",
       "description": "Soundroom, a university UX/UI project by Gabriel Braga: a social platform to log listening sessions, write entries, create playlists and discover independent artists."
     }
+  },
+  "pages": {
+    "about": {
+      "path": "/about/",
+      "name": "About",
+      "title": "About — Gabriel Braga, Designer",
+      "description": "About Gabriel Braga, designer at Work & Co in São Paulo: background, experience (Work & Co, Cherey), Digital Design at Anhembi Morumbi, and a design philosophy built on intention, proportion and reduction."
+    },
+    "albums": {
+      "path": "/about/albums/",
+      "name": "Favorite albums",
+      "title": "Favorite Albums — Gabriel Braga",
+      "description": "Albums Gabriel Braga keeps coming back to, from Pink Floyd and The Beatles to Radiohead, Tame Impala and Porter Robinson — browsed as 3D vinyl records."
+    },
+    "films": {
+      "path": "/about/films/",
+      "name": "Favorite films",
+      "title": "Favorite Films — Gabriel Braga",
+      "description": "Films and series Gabriel Braga loves, including Perfect Days, Parasite, Whiplash and Frieren — browsed as 3D discs, each credited to its directors."
+    },
+    "books": {
+      "path": "/about/books/",
+      "name": "Favorite books",
+      "title": "Favorite Books — Gabriel Braga",
+      "description": "Books that shaped how Gabriel Braga thinks about design, by Don Norman, Paul Rand, Massimo Vignelli, Ellen Lupton and more — browsed as 3D books."
+    }
   }
 }

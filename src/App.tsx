@@ -9,6 +9,9 @@ import {
 import type { CSSProperties, RefObject } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import seo from "./seo.json"
+import AboutPage from "./about/AboutPage"
+import type { AboutView } from "./about/AboutPage"
+import Intro from "./Intro"
 
 // ── Home carousel images ──────────────────────────────────────────────────────
 import imgC0 from "@/imports/Home/b9f92c64362555697b1bf52070200b5776449dd9.png"
@@ -349,11 +352,12 @@ function measureHeroLines(root: HTMLElement | null): number[] {
 // Holds the Home in its hidden "from" state until the font and the first
 // panel image are ready (or ~1s passes), so the panel never animates empty and
 // the image never "jumps" in afterwards. Full sequence plays once per session.
-function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
+function useHomeEntrance(heroRef: RefObject<HTMLElement | null>, hold: boolean) {
   const [phase, setPhase] = useState<EnterPhase>("wait")
   const [lines, setLines] = useState<number[]>([])
 
   useEffect(() => {
+    if (hold) return
     let cancelled = false
     const seen = hasEnteredThisSession()
 
@@ -380,18 +384,23 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>) {
     return () => {
       cancelled = true
     }
-  }, [heroRef])
+  }, [heroRef, hold])
 
   return { phase, lines }
 }
 
 function HomePage({
   onOpenProject,
+  onOpenAbout,
   isActive,
   chromeVisible,
   panelHidden,
+  holdEntrance,
 }: {
   onOpenProject: (id: ProjectId, origin?: FlightOrigin) => void
+  onOpenAbout: () => void
+  // the intro is still on screen: keep everything in its "before" state
+  holdEntrance: boolean
   isActive: boolean
   // hero, footer and image counter — faded out while a project is open
   chromeVisible: boolean
@@ -403,7 +412,7 @@ function HomePage({
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
   const [overLink, setOverLink] = useState(false)
   const heroRef = useRef<HTMLHeadingElement>(null)
-  const { phase, lines } = useHomeEntrance(heroRef)
+  const { phase, lines } = useHomeEntrance(heroRef, holdEntrance)
   const hasHover = useHasHover()
   const isDesktop = useIsDesktop()
   // Synchronous lock (not state) so a burst of wheel events arriving in the
@@ -636,6 +645,17 @@ function HomePage({
       >
         {/* Mobile: 3 links in one row; 22px line + 11px padding top/bottom = 44px touch target (the underline offset above compensates). Desktop: as before. */}
         <div className="flex flex-nowrap justify-between lg:justify-start lg:gap-x-[40px]">
+          <a
+            href="/about"
+            className="footer-link link-underline py-[11px] lg:py-0"
+            style={{ cursor: hasHover ? "none" : "auto", "--i": 0 } as CSSProperties}
+            onClick={(e) => {
+              e.preventDefault()
+              onOpenAbout()
+            }}
+          >
+            About
+          </a>
           {footerLinks.map((l, i) => (
             <a
               key={l.label}
@@ -644,7 +664,7 @@ function HomePage({
               rel="noreferrer"
               className="footer-link link-underline py-[11px] lg:py-0"
               style={
-                { cursor: hasHover ? "none" : "auto", "--i": i } as CSSProperties
+                { cursor: hasHover ? "none" : "auto", "--i": i + 1 } as CSSProperties
               }
             >
               {l.label}
@@ -914,6 +934,18 @@ const pathToProject: Record<string, ProjectId> = {
   "/sound-room": "soundroom",
   "/playstation-connect": "playstation",
 }
+const aboutViews: Record<string, AboutView> = {
+  "/about": "about",
+  "/about/albums": "albums",
+  "/about/films": "films",
+  "/about/books": "books",
+}
+const aboutToPath: Record<AboutView, string> = {
+  about: "/about",
+  albums: "/about/albums",
+  films: "/about/films",
+  books: "/about/books",
+}
 const projectToPath: Record<ProjectId, string> = {
   decolar: "/decolar",
   soundroom: "/sound-room",
@@ -1025,13 +1057,35 @@ function Flight({
 
 type Stage = "idle" | "opening" | "open" | "closing"
 
+// what the intro waits for (besides the fonts): the Home's images
+const introAssets = carouselItems.map((c) => c.img)
+
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const cleanPath = location.pathname.replace(/\/$/, "") || "/"
   const overlay = pathToProject[cleanPath] ?? null
+  const aboutView = aboutViews[cleanPath] ?? null
   const reducedMotion = usePrefersReducedMotion()
   const isDesktop = useIsDesktop()
+
+  // Intro: first visit of the session only.
+  const [introOn, setIntroOn] = useState(() => !hasEnteredThisSession())
+  const [homeHeld, setHomeHeld] = useState(introOn)
+
+  // About overlay: mounted while visible + during its fade out.
+  const [aboutRendered, setAboutRendered] = useState<AboutView | null>(aboutView)
+  const [aboutVisible, setAboutVisible] = useState(false)
+  useEffect(() => {
+    if (aboutView) {
+      setAboutRendered(aboutView)
+      requestAnimationFrame(() => requestAnimationFrame(() => setAboutVisible(true)))
+      return
+    }
+    setAboutVisible(false)
+    const t = setTimeout(() => setAboutRendered(null), reducedMotion ? 150 : 380)
+    return () => clearTimeout(t)
+  }, [aboutView, reducedMotion])
 
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [renderedOverlay, setRenderedOverlay] = useState<ProjectId | null>(null)
@@ -1073,8 +1127,14 @@ export default function App() {
   }, [overlay])
 
   useEffect(() => {
-    const page = overlay ? seo.routes[overlay] : seo.home
-    const url = seo.siteUrl + (overlay ? seo.routes[overlay].path : "/")
+    const page = overlay
+      ? seo.routes[overlay]
+      : aboutView
+        ? seo.pages[aboutView]
+        : seo.home
+    const url =
+      seo.siteUrl +
+      (overlay ? seo.routes[overlay].path : aboutView ? seo.pages[aboutView].path : "/")
     document.title = page.title
     document
       .querySelector('meta[name="description"]')
@@ -1089,7 +1149,7 @@ export default function App() {
       .querySelector('meta[property="og:url"]')
       ?.setAttribute("content", url)
     document.querySelector('link[rel="canonical"]')?.setAttribute("href", url)
-  }, [overlay])
+  }, [overlay, aboutView])
 
   const canFly = isDesktop && !reducedMotion
 
@@ -1169,7 +1229,9 @@ export default function App() {
       <div className="relative lg:absolute lg:inset-0">
         <HomePage
           onOpenProject={openProject}
-          isActive={!overlay && stage === "idle"}
+          onOpenAbout={() => navigate("/about")}
+          holdEntrance={homeHeld}
+          isActive={!overlay && !aboutView && !introOn && stage === "idle"}
           chromeVisible={
             stage === "idle" || (stage === "closing" && homeChromeIn)
           }
@@ -1200,6 +1262,31 @@ export default function App() {
             }
           />
         </div>
+      )}
+
+      {aboutRendered && (
+        <div
+          className="fixed inset-0 z-30"
+          style={{
+            opacity: aboutVisible ? 1 : 0,
+            transition: `opacity ${reducedMotion ? 150 : aboutVisible ? 420 : 300}ms var(--ease-standard)`,
+          }}
+        >
+          <AboutPage
+            view={aboutView ?? aboutRendered}
+            onNavigate={(v) => navigate(aboutToPath[v])}
+            onClose={() => navigate("/")}
+          />
+        </div>
+      )}
+
+      {introOn && (
+        <Intro
+          assets={introAssets}
+          reducedMotion={reducedMotion}
+          onReveal={() => setHomeHeld(false)}
+          onDone={() => setIntroOn(false)}
+        />
       )}
 
       {flight && (

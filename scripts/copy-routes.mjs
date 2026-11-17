@@ -75,4 +75,12 @@ for (const route of Object.values(seo.routes)) {
   written.push(dir)
 }
 
+// About pages (no case-study structured data)
+for (const page of Object.values(seo.pages ?? {})) {
+  const dir = page.path.replace(/^\/|\/$/g, '')
+  mkdirSync(join('dist', dir), { recursive: true })
+  writeFileSync(join('dist', dir, 'index.html'), withMeta(baseHtml, { ...page, url: `${siteUrl}${page.path}` }))
+  written.push(dir)
+}
+
 console.log('index.html + rotas com SEO próprio:', written.join(', '))

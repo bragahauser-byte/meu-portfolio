@@ -1,0 +1,103 @@
+/* ── Intro ─────────────────────────────────────────────────────────────────────
+   Light-gray panel over the white site, so the curtain lift reads as a tone
+   change. Same type as the About header (Plus Jakarta Sans 24/32, +0.02em);
+   the phrase uses the About body face (PP Neue Montreal). */
+.intro {
+  --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: all;
+  cursor: progress;
+  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: 0.02em;
+  color: var(--c-label);
+}
+.intro-panel {
+  position: absolute;
+  inset: 0;
+  background: #f2f2f0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* progress */
+.intro-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 2px;
+  background: #1a1a1a;
+  transform-origin: left center;
+}
+
+/* text blocks: every line sits in its own mask and rises in */
+.intro-block { position: absolute; display: flex; flex-direction: column; }
+.intro-tl { left: 32px; top: 32px; }
+.intro-tr { right: 32px; top: 32px; text-align: right; align-items: flex-end; }
+.intro-bl { left: 32px; bottom: 32px; }
+.intro-line { display: block; overflow: hidden; }
+.intro-line > span {
+  display: inline-block;
+  animation: intro-rise 1100ms var(--ease-out-expo) calc(260ms + var(--i, 0) * 100ms) both;
+}
+.intro-num { font-variant-numeric: tabular-nums; }
+@keyframes intro-rise { from { transform: translateY(110%); } }
+
+/* phrase */
+.intro-phrase {
+  position: absolute;
+  left: 19.375vw;
+  right: 19.01vw;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
+  font-family: 'PP Neue Montreal', var(--font-sans);
+  letter-spacing: 0;
+  font-size: clamp(26px, 2.0833vw, 40px);
+  line-height: 1.4;
+  color: #333;
+}
+.intro-word {
+  display: inline-block;
+  animation: intro-blur 1400ms var(--ease-out-expo) calc(700ms + var(--w) * 75ms) both;
+}
+@keyframes intro-blur {
+  from { opacity: 0; filter: blur(14px); transform: translateY(10px); }
+}
+
+/* ── exit ── */
+.intro[data-phase='out'] { pointer-events: none; }
+.intro[data-phase='out'] .intro-word {
+  animation: intro-blur-out 520ms var(--ease-standard) calc(var(--w) * 18ms) both;
+}
+@keyframes intro-blur-out {
+  to { opacity: 0; filter: blur(12px); transform: translateY(-8px); }
+}
+.intro[data-phase='out'] .intro-line > span {
+  animation: intro-leave 620ms var(--ease-curtain) calc(var(--i, 0) * 50ms) both;
+}
+@keyframes intro-leave { to { transform: translateY(-110%); } }
+.intro[data-phase='out'] .intro-panel {
+  animation: intro-curtain 1050ms var(--ease-curtain) 380ms both;
+}
+@keyframes intro-curtain { to { transform: translateY(-100%); } }
+
+@media (max-width: 1023px) {
+  .intro { font-size: 17px; line-height: 22px; }
+  .intro-tl, .intro-bl { left: 16px; }
+  .intro-tl, .intro-tr { top: 16px; }
+  .intro-tr { right: 16px; }
+  .intro-bl { bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .intro-phrase { left: 16px; right: 16px; font-size: 26px; line-height: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro *, .intro-panel { animation: none !important; }
+  .intro { transition: opacity 300ms linear; }
+  .intro[data-phase='out'] { opacity: 0; }
+}
