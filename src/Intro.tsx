@@ -12,10 +12,10 @@ import "./intro.css"
 // The shown progress is min(real, time): fast connections still get the full
 // rhythm (never under MIN_MS), slow ones never see a bar that lies.
 
-const MIN_MS = 3200
-const HOLD_MS = 420
-const OUT_MS = 1500
-const REVEAL_AT = 520 // ms into the exit when the Home starts its entrance
+const MIN_MS = 4400
+const HOLD_MS = 600
+const OUT_MS = 1900
+const REVEAL_AT = 700 // ms into the exit when the Home starts its entrance
 const MAX_WAIT_MS = 8000
 
 const phrase = "If it doesn't make someone's life a little easier, what's the point?"
@@ -52,8 +52,8 @@ export default function Intro({
   // real loading progress
   useEffect(() => {
     const jobs: Promise<unknown>[] = [
-      document.fonts?.load('400 24px "PP Neue Montreal"').catch(() => undefined) ?? Promise.resolve(),
-      document.fonts?.load('400 24px "Plus Jakarta Sans"').catch(() => undefined) ?? Promise.resolve(),
+      document.fonts?.load('400 16px "PP Neue Montreal"').catch(() => undefined) ?? Promise.resolve(),
+      document.fonts?.load('400 40px "PP Neue Montreal"').catch(() => undefined) ?? Promise.resolve(),
       ...assets.map(preload),
     ]
     let done = 0
@@ -76,7 +76,7 @@ export default function Intro({
     const tick = (now: number) => {
       const time = easeInOut(Math.min(1, (now - t0) / minMs))
       const goal = Math.min(real.current, time)
-      value += (goal - value) * 0.18
+      value += (goal - value) * 0.12
       if (goal >= 1 && 1 - value < 0.004) value = 1
       setShown(value)
       if (value < 1) raf = requestAnimationFrame(tick)
@@ -101,7 +101,7 @@ export default function Intro({
   }, [phase, reducedMotion])
 
   const pct = Math.round(shown * 100)
-  const year = 2023 + Math.min(3, Math.floor(shown * 3.999))
+  const year = 2024 + Math.min(2, Math.floor(shown * 2.999))
   const words = phrase.split(" ")
 
   return (
@@ -131,7 +131,7 @@ export default function Intro({
           </span>
           <span className="intro-line">
             <span className="intro-num" style={{ "--i": 4 } as CSSProperties}>
-              (2023—{year})
+              (2024—{year})
             </span>
           </span>
         </div>

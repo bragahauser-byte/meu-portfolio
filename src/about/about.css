@@ -18,12 +18,10 @@
   font-family: 'PP Neue Montreal', var(--font-sans);
 }
 
-/* header + bottom row: Plus Jakarta Sans 24/32, +0.02em */
+/* header + bottom row: PP Neue Montreal 16/24, +0.02em (site scale 16/14/12/40) */
 .about-type {
-  font-family: 'Plus Jakarta Sans', var(--font-sans);
-  /* 24/32 at 1920, easing down to 20px on 1366 laptops so the columns breathe */
-  font-size: clamp(20px, calc(0.722vw + 10.14px), 24px);
-  line-height: 1.3333;
+  font-size: 16px;
+  line-height: 24px;
   letter-spacing: 0.02em;
 }
 
@@ -131,7 +129,7 @@
   margin: 0;
   margin-left: var(--c2);
   width: calc(var(--c4r) - var(--c2));
-  padding-top: calc(376px - 32px - 128px - 24px);
+  padding-top: calc(376px - 32px - 96px - 24px); /* body starts at y=376, as in the Figma frame */
   padding-bottom: 120px;
   font-size: 40px;
   line-height: 56px;
@@ -217,8 +215,8 @@
   display: inline-flex;
   align-items: flex-end;
   gap: 3px;
-  height: 18px;
-  margin-bottom: 7px;
+  height: 13px;
+  margin-bottom: 5px;
 }
 .eq i {
   display: block;
@@ -381,17 +379,22 @@
   transform: translateZ(0.5px);
 }
 
-/* Disc --------------------------------------------------------------------- */
+/* Disc ---------------------------------------------------------------------
+   Radii as % of the diameter's half: hole 12.5%, hub to 27%, mirror band to
+   38%, print to 97.5%, clear lip to 100%. In a D-sized box "R%" of the
+   radius is R/2 % of the side, which is what radial-gradient(circle closest-side)
+   gives us directly. */
 .cd { position: absolute; left: 0; top: 0; }
 .cd-spin {
   position: absolute;
   left: 0;
   top: 0;
-  animation: cd-spin 38s linear infinite;
+  animation: cd-spin 42s linear infinite;
 }
-.c3d-item[data-active='true'] .cd-spin { animation-duration: 14s; }
+.c3d-item[data-active='true'] .cd-spin { animation-duration: 12s; }
 @keyframes cd-spin { to { transform: rotate(360deg); } }
-.cd-edge, .cd-art, .cd-hub, .cd-iris, .cd-rim {
+
+.cd-shadow, .cd-edge, .cd-clear, .cd-art, .cd-grooves, .cd-mirror, .cd-hub, .cd-iris, .cd-glint, .cd-rim {
   position: absolute;
   width: var(--d);
   height: var(--d);
@@ -399,47 +402,98 @@
   top: calc(var(--d) / -2);
   border-radius: 50%;
 }
-.cd-edge, .cd-art, .cd-iris {
-  -webkit-mask: radial-gradient(circle, transparent 0 11.6%, #000 12%);
-  mask: radial-gradient(circle, transparent 0 11.6%, #000 12%);
+/* everything with a hole */
+.cd-edge, .cd-clear, .cd-art, .cd-grooves, .cd-mirror, .cd-hub, .cd-iris, .cd-glint {
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 12.3%, #000 12.6%);
+  mask: radial-gradient(circle closest-side, transparent 0 12.3%, #000 12.6%);
 }
-.cd-edge { background: #b9bcc1; }
-.cd-edge-top { background: #d9dce0; }
+
+/* soft contact shadow under the disc */
+.cd-shadow {
+  background: radial-gradient(circle closest-side, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.07) 55%, rgba(0, 0, 0, 0) 100%);
+  transform: translateZ(calc(var(--d) * -0.09)) scale(1.04);
+}
+
+/* 1.2 mm of polycarbonate seen from the side */
+.cd-edge { background: #a9adb3; }
+.cd-edge-1 { transform: translateZ(-2.4px); background: #8f949b; }
+.cd-edge-2 { transform: translateZ(-1.6px); }
+.cd-edge-3 { transform: translateZ(-0.8px); background: #c8ccd1; }
+
+/* the clear disc itself: only visible as the lip and the hub */
+.cd-clear {
+  background: radial-gradient(circle closest-side,
+    rgba(255, 255, 255, 0) 0 96.6%,
+    rgba(244, 246, 249, 0.85) 97.4%,
+    rgba(196, 201, 208, 0.75) 99%,
+    rgba(150, 156, 164, 0.8) 100%);
+}
+
 .cd-art {
   background-size: cover;
   background-position: center;
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 37.6%, #000 38% 97.2%, transparent 97.5%);
+  mask: radial-gradient(circle closest-side, transparent 0 37.6%, #000 38% 97.2%, transparent 97.5%);
 }
+/* faint concentric print texture + inner/outer print edge */
+.cd-grooves {
+  background:
+    radial-gradient(circle closest-side, rgba(0, 0, 0, 0) 0 37.8%, rgba(0, 0, 0, 0.18) 38.2%, rgba(0, 0, 0, 0) 39.5%, rgba(0, 0, 0, 0) 96%, rgba(0, 0, 0, 0.16) 97.3%, rgba(0, 0, 0, 0) 97.5%),
+    repeating-radial-gradient(circle closest-side, rgba(255, 255, 255, 0.035) 0 0.35%, rgba(0, 0, 0, 0.03) 0.35% 0.7%);
+  transform: translateZ(0.2px);
+}
+
+/* mirror band: brushed metal that throws light as it turns */
+.cd-mirror {
+  background:
+    radial-gradient(circle closest-side, rgba(0, 0, 0, 0) 0 27%, rgba(120, 126, 134, 0.6) 27.3%, rgba(0, 0, 0, 0) 28.5%, rgba(0, 0, 0, 0) 36.8%, rgba(110, 116, 124, 0.5) 37.6%, rgba(0, 0, 0, 0) 38%),
+    repeating-radial-gradient(circle closest-side, rgba(255, 255, 255, 0.18) 0 0.5%, rgba(0, 0, 0, 0.05) 0.5% 1%),
+    conic-gradient(from 15deg, #c9cdd3, #f6f7f9 10%, #9ea4ac 22%, #e9ebee 34%, #b4b9c0 47%, #fbfcfd 58%, #a3a9b1 71%, #edf0f2 84%, #c9cdd3);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 27%, #000 27.3% 37.8%, transparent 38%);
+  mask: radial-gradient(circle closest-side, transparent 0 27%, #000 27.3% 37.8%, transparent 38%);
+  transform: translateZ(0.25px);
+}
+
+/* clear hub with the raised stacking ring */
 .cd-hub {
-  /* clear plastic ring around the hole */
-  width: calc(var(--d) * 0.46);
-  height: calc(var(--d) * 0.46);
-  left: calc(var(--d) * -0.23);
-  top: calc(var(--d) * -0.23);
-  background: radial-gradient(circle,
-    transparent 0 51.5%,
-    rgba(255, 255, 255, 0.95) 52.5%,
-    rgba(214, 218, 223, 0.92) 58%,
-    rgba(236, 238, 241, 0.88) 70%,
-    rgba(196, 200, 206, 0.86) 84%,
-    rgba(232, 234, 237, 0.9) 94%,
-    rgba(160, 165, 172, 0.7) 99%,
-    transparent 100%);
-  transform: translateZ(0.4px);
+  background: radial-gradient(circle closest-side,
+    rgba(255, 255, 255, 0) 0 12.4%,
+    rgba(150, 156, 164, 0.75) 12.8%,
+    rgba(250, 251, 252, 0.95) 13.8%,
+    rgba(226, 230, 235, 0.6) 15.5%,
+    rgba(214, 219, 225, 0.42) 18%,
+    rgba(255, 255, 255, 0.9) 18.8%,
+    rgba(160, 166, 174, 0.7) 19.6%,
+    rgba(232, 235, 239, 0.5) 20.6%,
+    rgba(214, 219, 225, 0.38) 25%,
+    rgba(170, 176, 184, 0.6) 26.6%,
+    rgba(255, 255, 255, 0) 27.2%);
+  transform: translateZ(0.3px);
 }
+
+/* holographic light: rainbow sweep + a soft specular band, both still */
 .cd-iris {
   pointer-events: none;
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.34) 46%, rgba(255, 255, 255, 0) 58%),
-    conic-gradient(from 20deg, rgba(255, 60, 160, 0.10), rgba(255, 210, 60, 0.10), rgba(60, 255, 200, 0.12), rgba(60, 140, 255, 0.10), rgba(200, 60, 255, 0.10), rgba(255, 60, 160, 0.10));
-  transform: translateZ(0.8px);
+    conic-gradient(from 200deg,
+      rgba(255, 70, 170, 0) 0deg, rgba(255, 70, 170, 0.16) 18deg, rgba(255, 220, 80, 0.16) 34deg, rgba(80, 255, 210, 0.16) 50deg, rgba(80, 150, 255, 0.16) 66deg, rgba(190, 80, 255, 0) 86deg,
+      rgba(255, 70, 170, 0) 180deg, rgba(255, 70, 170, 0.12) 198deg, rgba(255, 220, 80, 0.12) 214deg, rgba(80, 255, 210, 0.12) 230deg, rgba(80, 150, 255, 0.12) 246deg, rgba(190, 80, 255, 0) 266deg);
+  transform: translateZ(0.6px);
+}
+.cd-glint {
+  pointer-events: none;
+  background:
+    linear-gradient(122deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.32) 44%, rgba(255, 255, 255, 0.06) 52%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 45%);
+  transform: translateZ(0.7px);
 }
 .cd-rim {
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 1.5px rgba(235, 237, 240, 0.95),
-    inset 0 0 0 3px rgba(150, 154, 160, 0.55),
-    inset 0 0 18px rgba(0, 0, 0, 0.18);
-  transform: translateZ(0.9px);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    inset 0 0 0 2px rgba(140, 146, 154, 0.45),
+    inset 0 0 22px rgba(0, 0, 0, 0.14);
+  transform: translateZ(0.8px);
 }
 
 /* Book --------------------------------------------------------------------- */
@@ -505,16 +559,17 @@
   background: repeating-linear-gradient(180deg, #d9d3c6 0 1px, #c9c2b4 1px 1.6px);
 }
 
-/* ── Smaller screens ──────────────────────────────────────────────────────── */
-@media (max-width: 1359px) {
+/* ── Tablet & phone ─────────────────────────────────────────────────────────
+   Header folds into two columns with the close button on the right; the
+   carousel's active item lines up with the page margin instead. */
+@media (max-width: 1023px) {
   .about { --pad: 24px; --pad-r: 24px; }
-  .about-type { font-size: 18px; line-height: 24px; }
-  .about-body p { margin-bottom: 40px; }
   .about-header {
     grid-template-columns: 1fr 1fr 48px;
-    row-gap: 20px;
+    row-gap: 24px;
     column-gap: 24px;
-    padding-bottom: 20px;
+    padding-top: calc(var(--pad) + env(safe-area-inset-top));
+    padding-bottom: 24px;
   }
   .about-col[data-col='1'] { grid-column: 1; grid-row: 1; }
   .about-col[data-col='2'] { grid-column: 2; grid-row: 1; }
@@ -524,23 +579,27 @@
   .about-body {
     margin: 0 var(--pad);
     width: auto;
-    padding-top: 48px;
-    font-size: 28px;
-    line-height: 40px;
+    padding-top: 40px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    text-align: left;
   }
-  .about-credit { left: var(--pad); }
+  .about-bottom { bottom: calc(var(--pad) + env(safe-area-inset-bottom)); }
+  .about-credit { left: var(--pad); max-width: calc(100vw - var(--pad) * 2 - 120px); }
   .about-sound { left: auto; right: var(--pad); }
+  .about-sound-track { width: auto; max-width: 30vw; }
   .about-hint { display: none; }
 }
 @media (max-width: 640px) {
   .about { --pad: 16px; --pad-r: 16px; }
-  .about-type { font-size: 15px; line-height: 20px; }
-  .about-body p { margin-bottom: 30px; }
-  .about-header { column-gap: 16px; row-gap: 16px; }
-  .about-body { font-size: 21px; line-height: 30px; text-align: left; padding-top: 32px; }
-  .about-credit { max-width: calc(100vw - 32px); bottom: 44px; }
+  .about-header { column-gap: 16px; row-gap: 20px; padding-bottom: 16px; }
+  .about-col p { font-size: 14px; line-height: 20px; }
+  .about-body { font-size: 16px; line-height: 28px; letter-spacing: 0.01em; padding-top: 24px; }
+  .about-body p { margin-bottom: 28px; }
+  .about-credit { max-width: calc(100vw - 32px); bottom: 36px; }
+  .about-credit-line { font-size: 14px; line-height: 20px; }
   .about-sound { left: var(--pad); right: auto; bottom: 0; }
-  .about-sound-track { display: none; }
+  .about-sound-track { display: block; max-width: calc(100vw - 80px); font-size: 14px; line-height: 20px; }
+  .eq { margin-bottom: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

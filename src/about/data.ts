@@ -63,15 +63,25 @@ function film(slug: string, title: string, credit: string, edge: number[], tone:
   return { slug, title, credit, cover: cover("films", slug), edge: rgb(edge), tone: rgb(tone) }
 }
 
+// "Screen": films, series and anime, mixed on purpose (genre, format and
+// color all change from one disc to the next).
 export const films: Favorite[] = [
   film("perfect-days", "Perfect Days", "Directed by Wim Wenders, 2023", [43, 31, 14], [79, 67, 57]),
-  film("into-the-spider-verse", "Spider-Man: Into the Spider-Verse", "Directed by Bob Persichetti, Peter Ramsey & Rodney Rothman, 2018", [107, 138, 170], [104, 131, 159]),
+  film("frieren", "Frieren: Beyond Journey's End", "Directed by Keiichirō Saitō, from the manga by Kanehito Yamada & Tsukasa Abe, 2023", [107, 120, 106], [143, 174, 155]),
+  film("breaking-bad", "Breaking Bad", "Created by Vince Gilligan, 2008", [137, 112, 85], [143, 127, 99]),
   film("parasite", "Parasite", "Directed by Bong Joon Ho, 2019", [41, 66, 58], [59, 84, 73]),
-  film("frieren", "Frieren: Beyond Journey's End", "Directed by Keiichirō Saitō, from the manga by Kanehito Yamada & Tsukasa Abe, 2023", [191, 174, 145], [168, 161, 149]),
-  film("whiplash", "Whiplash", "Directed by Damien Chazelle, 2014", [34, 21, 18], [73, 60, 53]),
-  film("the-batman", "The Batman", "Directed by Matt Reeves, 2022", [203, 16, 16], [162, 17, 18]),
+  film("akira", "Akira", "Directed by Katsuhiro Otomo, from his manga, 1988", [29, 27, 27], [73, 50, 46]),
+  film("the-bear", "The Bear", "Created by Christopher Storer, 2022", [203, 210, 228], [194, 198, 212]),
+  film("whiplash", "Whiplash", "Directed by Damien Chazelle, 2014", [0, 0, 0], [26, 25, 29]),
   film("evangelion", "Neon Genesis Evangelion", "Directed by Hideaki Anno, 1995", [46, 65, 102], [51, 64, 90]),
+  film("ainda-estou-aqui", "Ainda Estou Aqui", "Directed by Walter Salles, 2024", [129, 146, 156], [114, 118, 121]),
+  film("into-the-spider-verse", "Spider-Man: Into the Spider-Verse", "Directed by Bob Persichetti, Peter Ramsey & Rodney Rothman, 2018", [0, 0, 0], [44, 31, 41]),
+  film("the-office", "The Office", "Developed by Greg Daniels, from the series by Ricky Gervais & Stephen Merchant, 2005", [148, 144, 144], [137, 133, 134]),
+  film("the-batman", "The Batman", "Directed by Matt Reeves, 2022", [203, 16, 16], [162, 17, 18]),
+  film("shawshank-redemption", "The Shawshank Redemption", "Directed by Frank Darabont, from the novella by Stephen King, 1994", [64, 45, 38], [95, 80, 66]),
+  film("spirited-away", "Spirited Away", "Written and directed by Hayao Miyazaki, 2001", [59, 53, 48], [88, 70, 62]),
   film("attack-on-titan", "Attack on Titan", "Directed by Tetsurō Araki, from the manga by Hajime Isayama, 2013", [75, 39, 13], [115, 84, 59]),
+  film("empire-strikes-back", "Star Wars: The Empire Strikes Back", "Directed by Irvin Kershner, 1980", [22, 22, 22], [26, 23, 23]),
 ]
 
 function book(slug: string, title: string, author: string, edge: number[], tone: number[]): Favorite {
@@ -95,7 +105,7 @@ export const favorites: Record<Category, Favorite[]> = { albums, films, books }
 
 export const categoryLabel: Record<Category, string> = {
   albums: "Albums",
-  films: "Films",
+  films: "Screen",
   books: "Books",
 }
 

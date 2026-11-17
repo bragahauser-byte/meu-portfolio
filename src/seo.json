@@ -38,10 +38,10 @@
       "description": "Albums Gabriel Braga keeps coming back to, from Pink Floyd and The Beatles to Radiohead, Tame Impala and Porter Robinson — browsed as 3D vinyl records."
     },
     "films": {
-      "path": "/about/films/",
-      "name": "Favorite films",
-      "title": "Favorite Films — Gabriel Braga",
-      "description": "Films and series Gabriel Braga loves, including Perfect Days, Parasite, Whiplash and Frieren — browsed as 3D discs, each credited to its directors."
+      "path": "/about/screen/",
+      "name": "Favorite films, series and anime",
+      "title": "Screen: Favorite Films, Series & Anime — Gabriel Braga",
+      "description": "Films, series and anime Gabriel Braga loves, from Perfect Days, Parasite and Ainda Estou Aqui to Breaking Bad, Frieren and Akira — browsed as 3D discs, each credited to its creators."
     },
     "books": {
       "path": "/about/books/",

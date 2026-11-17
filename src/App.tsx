@@ -362,7 +362,7 @@ function useHomeEntrance(heroRef: RefObject<HTMLElement | null>, hold: boolean) 
     const seen = hasEnteredThisSession()
 
     const fontReady = Promise.all([
-      document.fonts?.load('400 32px "Plus Jakarta Sans"'),
+      document.fonts?.load('400 16px "PP Neue Montreal"'),
       document.fonts?.ready,
     ]).catch(() => undefined)
 
@@ -641,13 +641,13 @@ function HomePage({
 
       <nav
         aria-label="Links externos"
-        className="footer home-chrome type-footer mx-4 mt-12 border-t border-separator pt-[13px] pb-[calc(32px+env(safe-area-inset-bottom))] text-label [--u-bottom:calc(11px_-_0.1em)] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:m-0 lg:border-0 lg:p-0 lg:[--u-bottom:-0.1em]"
+        className="footer home-chrome type-footer mx-4 mt-12 border-t border-separator pt-[13px] pb-[calc(32px+env(safe-area-inset-bottom))] text-label [--u-bottom:12px] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:m-0 lg:border-0 lg:p-0 lg:[--u-bottom:2px]"
       >
-        {/* Mobile: 3 links in one row; 22px line + 11px padding top/bottom = 44px touch target (the underline offset above compensates). Desktop: as before. */}
+        {/* Mobile: 4 links in one row; 24px line + 10px padding top/bottom = 44px touch target (the underline offset above compensates). */}
         <div className="flex flex-nowrap justify-between lg:justify-start lg:gap-x-[40px]">
           <a
             href="/about"
-            className="footer-link link-underline py-[11px] lg:py-0"
+            className="footer-link link-underline py-[10px] lg:py-0"
             style={{ cursor: hasHover ? "none" : "auto", "--i": 0 } as CSSProperties}
             onClick={(e) => {
               e.preventDefault()
@@ -662,7 +662,7 @@ function HomePage({
               href={l.href}
               target="_blank"
               rel="noreferrer"
-              className="footer-link link-underline py-[11px] lg:py-0"
+              className="footer-link link-underline py-[10px] lg:py-0"
               style={
                 { cursor: hasHover ? "none" : "auto", "--i": i + 1 } as CSSProperties
               }
@@ -671,9 +671,6 @@ function HomePage({
             </a>
           ))}
         </div>
-        <p className="m-0 mt-[5px] text-[12px] leading-[16px] tracking-normal text-secondary lg:hidden">
-          © 2026 Gabriel Braga
-        </p>
       </nav>
 
       <p className="sr-only">
@@ -937,13 +934,14 @@ const pathToProject: Record<string, ProjectId> = {
 const aboutViews: Record<string, AboutView> = {
   "/about": "about",
   "/about/albums": "albums",
-  "/about/films": "films",
+  "/about/screen": "films",
+  "/about/films": "films", // old link
   "/about/books": "books",
 }
 const aboutToPath: Record<AboutView, string> = {
   about: "/about",
   albums: "/about/albums",
-  films: "/about/films",
+  films: "/about/screen",
   books: "/about/books",
 }
 const projectToPath: Record<ProjectId, string> = {

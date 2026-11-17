@@ -55,7 +55,7 @@ const mobile = (vw: number) => vw < 768
 const layouts: Record<Category, Layout> = {
   // Sleeves in a row; the active record slides out of its sleeve to the right.
   albums: {
-    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.56, vh * 0.3) : Math.min(vh * 0.44, vw * 0.25)),
+    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.56, vh * 0.3) : Math.min(vh * 0.44, vw * (vw < 1024 ? 0.38 : 0.25))),
     half: (u) => u / 2,
     top: 55,
     perspective: 1800,
@@ -76,7 +76,7 @@ const layouts: Record<Category, Layout> = {
   // Discs in a row, tilted back like plates on a table; the active one lifts
   // up towards the camera.
   films: {
-    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.64, vh * 0.34) : Math.min(vh * 0.5, vw * 0.28)),
+    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.64, vh * 0.34) : Math.min(vh * 0.5, vw * (vw < 1024 ? 0.44 : 0.28))),
     half: (u) => u / 2,
     top: 54,
     perspective: 1600,
@@ -96,7 +96,7 @@ const layouts: Record<Category, Layout> = {
   },
   // Books on a shelf: the active one faces you, the rest turn to show spines.
   books: {
-    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.78, vh * 0.42) : Math.min(vh * 0.54, vw * 0.3)),
+    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.66, vh * 0.38) : Math.min(vh * 0.54, vw * (vw < 1024 ? 0.5 : 0.3))),
     half: (u) => (u * BOOK_RATIO) / 2,
     top: 55,
     perspective: 1800,
@@ -166,6 +166,7 @@ export default function Carousel3D({
     target: 0,
     active: -1,
     lastInput: 0,
+    dir: 1,
     tiltX: 0,
     tiltY: 0,
     pointerX: 0,
@@ -184,8 +185,11 @@ export default function Carousel3D({
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
 
-      // snap to the nearest item once input has settled
-      if (now - s.lastInput > 160) s.target = Math.round(s.target)
+      // once input settles, snap to an item — leaning in the direction of
+      // travel, so a single wheel click always moves exactly one item
+      if (now - s.lastInput > 160 && s.target !== Math.round(s.target)) {
+        s.target = s.dir > 0 ? Math.ceil(s.target - 0.15) : Math.floor(s.target + 0.15)
+      }
 
       const k = 1 - Math.exp(-dt * (reducedMotion ? 30 : 6.5))
       s.pos += (s.target - s.pos) * k
@@ -232,7 +236,9 @@ export default function Carousel3D({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const d = (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) + (e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX)
-      s.target += clamp(d * 0.0042, -0.75, 0.75)
+      const delta = clamp(d * 0.0085, -0.9, 0.9) // one wheel notch ≈ one item
+      s.target += delta
+      if (delta) s.dir = Math.sign(delta)
       s.lastInput = performance.now()
     }
     const onKey = (e: KeyboardEvent) => {
@@ -265,7 +271,9 @@ export default function Carousel3D({
       if (!drag.moved) return
       // either axis drives the line; dragging left/up moves forward
       const d = Math.abs(dx) > Math.abs(dy) ? dx : dy
-      s.target = drag.t - d / (u * 0.6)
+      const next = drag.t - d / (u * 0.6)
+      if (next !== s.target) s.dir = Math.sign(next - s.target)
+      s.target = next
       s.lastInput = performance.now() + 10_000 // hold while the finger is down
       const now = performance.now()
       lastMove = { x: d, t: now, v: (d - lastMove.x) / Math.max(1, now - lastMove.t) }
@@ -384,17 +392,25 @@ function Record({ item, u, spinning }: { item: Favorite; u: number; spinning: bo
 
 // ── CD / DVD ─────────────────────────────────────────────────────────────────
 function Disc({ item, u }: { item: Favorite; u: number }) {
+  // Real CD proportions (120 mm): 15 mm hole, clear hub to ~33 mm with a
+  // stacking ring, a mirror band, the printed area out to ~117 mm and a clear
+  // polycarbonate lip at the very edge.
   return (
     <div className="cd" style={{ "--d": `${u}px` } as CSSProperties}>
+      <div className="face cd-shadow" />
       <div className="cd-spin">
-        <div className="face cd-edge" style={{ transform: "translateZ(-3px)" }} />
-        <div className="face cd-edge" style={{ transform: "translateZ(-2px)" }} />
-        <div className="face cd-edge cd-edge-top" style={{ transform: "translateZ(-1px)" }} />
+        <div className="face cd-edge cd-edge-1" />
+        <div className="face cd-edge cd-edge-2" />
+        <div className="face cd-edge cd-edge-3" />
+        <div className="face cd-clear" />
         <div className="face cd-art" style={{ backgroundImage: `url(${item.cover})` }} />
+        <div className="face cd-grooves" />
+        <div className="face cd-mirror" />
         <div className="face cd-hub" />
       </div>
-      {/* reflections stay still while the disc turns underneath them */}
+      {/* light stays put while the disc turns underneath it */}
       <div className="face cd-iris" />
+      <div className="face cd-glint" />
       <div className="face cd-rim" />
     </div>
   )

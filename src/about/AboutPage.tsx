@@ -109,7 +109,7 @@ export default function AboutPage({
       root.style.setProperty("--c4", `${r4.left}px`)
       root.style.setProperty("--c4r", `${r4.right}px`)
       const pad = parseFloat(getComputedStyle(root).getPropertyValue("--pad")) || 32
-      setAnchor(window.innerWidth >= 1360 ? r2.left : pad)
+      setAnchor(window.innerWidth >= 1024 ? r2.left : pad)
     }
     update()
     const ro = new ResizeObserver(update)
