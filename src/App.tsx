@@ -261,6 +261,8 @@ type HeroWord = {
   tone: "dark" | "gray"
   href?: string
   after?: string
+  // desktop only: start a new line before this word
+  breakBefore?: boolean
 }
 
 // Words (not lines) are the animated unit: after fonts load we measure which
@@ -275,7 +277,7 @@ const heroWords: HeroWord[] = [
   { text: "designer", tone: "gray" },
   { text: "at", tone: "gray" },
   { text: "Work & Co", tone: "gray", href: "https://www.work.co/", after: "," },
-  { text: "based", tone: "gray" },
+  { text: "based", tone: "gray", breakBefore: true },
   { text: "in", tone: "gray" },
   { text: "São", tone: "gray" },
   { text: "Paulo.", tone: "gray" },
@@ -510,6 +512,7 @@ function HomePage({
         {heroWords.map((w, i) => (
           <Fragment key={i}>
             {i > 0 && " "}
+            {w.breakBefore && <br className="hidden lg:inline" />}
             <span
               className="hero-word inline-block whitespace-nowrap"
               style={
