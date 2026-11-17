@@ -507,7 +507,7 @@ function HomePage({
           and 32px of air before it. */}
       <h1
         ref={heroRef}
-        className="hero home-chrome type-hero sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(428px,calc(100vw_-_var(--home-img-w)_-_136px))] lg:bg-transparent lg:p-0"
+        className="hero home-chrome type-hero safe-x sticky top-0 z-20 m-0 w-full select-none bg-white px-4 pt-16 pb-6 [@media(max-height:560px)]:pt-6 [@media(max-height:560px)]:pb-4 lg:absolute lg:top-[32px] lg:left-[32px] lg:z-auto lg:w-[min(428px,calc(100vw_-_var(--home-img-w)_-_136px))] lg:bg-transparent lg:p-0"
       >
         {heroWords.map((w, i) => (
           <Fragment key={i}>
@@ -616,7 +616,9 @@ function HomePage({
       {/* ── Mobile / tablet (<lg): every project image, stacked in document
           order, natural scroll — no carousel, no snap, no auto-play. The
           hero above acts as the fixed header via `sticky top-0`. ─────────── */}
-      <div className="panel-media flex flex-col gap-4 px-4 pt-10 pb-2 lg:hidden">
+      {/* Phones: one column. iPhone Duo / tablets (640–1023px): two columns,
+          so a whole row of work fits on the folded and unfolded screens. */}
+      <div className="panel-media home-gallery safe-x flex flex-col gap-4 px-4 pt-10 pb-2 sm:grid sm:grid-cols-2 [@media(max-height:560px)]:pt-4 lg:hidden">
         {carouselItems.map((item, i) => (
           <button
             key={i}
@@ -644,7 +646,7 @@ function HomePage({
 
       <nav
         aria-label="Links externos"
-        className="footer home-chrome type-footer mx-4 mt-12 border-t border-separator pt-[13px] pb-[calc(32px+env(safe-area-inset-bottom))] text-label [--u-bottom:12px] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:m-0 lg:border-0 lg:p-0 lg:[--u-bottom:2px]"
+        className="footer home-chrome type-footer safe-mx mx-4 mt-12 border-t border-separator pt-[13px] pb-[calc(32px+env(safe-area-inset-bottom))] text-label [--u-bottom:12px] lg:absolute lg:bottom-[32px] lg:left-[32px] lg:m-0 lg:border-0 lg:p-0 lg:[--u-bottom:2px]"
       >
         {/* Mobile: 4 links in one row; 24px line + 10px padding top/bottom = 44px touch target (the underline offset above compensates). */}
         <div className="flex flex-nowrap justify-between lg:justify-start lg:gap-x-[40px]">
@@ -817,7 +819,9 @@ function ProjectPage({
       }}
     >
       {/* ── Mobile / tablet layout (< lg) — simple stacked flow ──────────── */}
-      <div className="flex flex-col gap-10 p-6 md:p-10 lg:hidden">
+      {/* Two columns from 900px (iPhone Duo open, 951×669) and whenever the
+          screen is split by a hinge; stacked below that. */}
+      <div className="proj-mobile flex flex-col gap-10 p-6 md:p-10 min-[900px]:hidden">
         <div>
           <p className="type-title m-0 text-label">{project.title}</p>
           <p className="type-title m-0 text-secondary">{project.subtitle}</p>
@@ -857,7 +861,7 @@ function ProjectPage({
           32px bottom padding on Left, it stops with a clean 32px gap above
           the bottom instead of leaving blank space once the text runs out. */}
       <div
-        className="hidden lg:flex"
+        className="proj-desktop hidden min-[900px]:flex"
         style={{ paddingTop: 32, paddingBottom: 32 }}
       >
         {/* Left: text column — 437px at 1920 (Figma), 32px from the screen

@@ -222,3 +222,45 @@ html, body, #root {
 .dot[aria-current='true']::before { background: var(--c-tertiary); }
 .dot:focus-visible { outline: none; }
 .dot:focus-visible::before { background: var(--c-accent); }
+
+/* ── iPhone Duo e telas dobráveis ─────────────────────────────────────────────
+   Frames de referência (pt = px CSS): externo 466×678 / 678×466, interno
+   951×669 / 669×951. As margens respeitam as áreas reservadas do aparelho
+   (faixa lateral de controles, área inferior) via safe-area, e quando a tela
+   interna se divide na dobradiça (Viewport Segments API) o conteúdo vai para
+   as duas metades sem cair na dobra. --seg2-left = início da metade direita. */
+@media (max-width: 1023px) {
+  .safe-x {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .safe-mx {
+    margin-left: max(16px, env(safe-area-inset-left));
+    margin-right: max(16px, env(safe-area-inset-right));
+  }
+}
+@media (horizontal-viewport-segments: 2) {
+  :root { --seg1-right: env(viewport-segment-right 0 0); --seg2-left: env(viewport-segment-left 1 0); }
+}
+/* simulação para a prévia (?fold=1): dobradiça vertical no meio da tela */
+:root[data-fold='1'] { --seg1-right: calc(50vw - 9px); --seg2-left: calc(50vw + 9px); }
+
+@media (horizontal-viewport-segments: 2) and (max-width: 1023px) {
+  .home .hero { width: var(--seg1-right); position: fixed; }
+  .home .home-gallery { margin-left: var(--seg2-left); display: flex; padding-top: 24px; }
+  .home .footer { position: fixed; bottom: 0; left: 0; width: calc(var(--seg1-right) - 32px); }
+}
+:root[data-fold='1'] .home .hero { width: var(--seg1-right); position: fixed; }
+:root[data-fold='1'] .home .home-gallery { margin-left: var(--seg2-left); display: flex; padding-top: 24px; }
+:root[data-fold='1'] .home .footer { position: fixed; bottom: 0; left: 0; width: calc(var(--seg1-right) - 32px); background: #fff; }
+
+/* Página de projeto no Duo aberto com dobradiça: texto na metade esquerda,
+   imagens na direita. A coluna de texto ocupa exatamente o primeiro segmento. */
+@media (horizontal-viewport-segments: 2) {
+  :root { --proj-col: calc(var(--seg1-right) - 64px); }
+  .proj-mobile { display: none !important; }
+  .proj-desktop { display: flex !important; }
+}
+:root[data-fold='1'] { --proj-col: calc(var(--seg1-right) - 64px); }
+:root[data-fold='1'] .proj-mobile { display: none !important; }
+:root[data-fold='1'] .proj-desktop { display: flex !important; }
