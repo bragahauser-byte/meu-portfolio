@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 // settle (so a fast scroll through ten albums doesn't start ten songs), fades
 // the old one out and the new one in. Browsers only allow sound after a real
 // user gesture: if play() is refused we wait for the next click / key press.
+// Songs are streamed (preload "none") and released when they fade out, so
+// only the album in focus ever downloads, and only as much as it plays.
 
 const FADE_MS = 450
 const SETTLE_MS = 380
@@ -21,6 +23,18 @@ function fade(audio: HTMLAudioElement, to: number, ms: number) {
     }
     requestAnimationFrame(step)
   })
+}
+
+// Stops a track and frees it: removing the src aborts any download still in
+// flight, so scrolling past albums never leaves full songs loading behind.
+function release(audio: HTMLAudioElement) {
+  audio.pause()
+  audio.removeAttribute("src")
+  audio.load()
+}
+
+function fadeOutAndRelease(audio: HTMLAudioElement, ms = FADE_MS) {
+  fade(audio, 0, ms).then(() => release(audio))
 }
 
 const MUTE_KEY = "portfolio:sound"
@@ -57,17 +71,19 @@ export function useTrack(src: string | null) {
     const old = current.current
     if (!src || muted) {
       if (old) {
-        fade(old, 0, FADE_MS).then(() => old.pause())
+        fadeOutAndRelease(old)
         current.current = null
       }
       setPlaying(false)
       return
     }
     const t = window.setTimeout(() => {
-      if (old) fade(old, 0, FADE_MS).then(() => old.pause())
-      const audio = new Audio(src)
-      audio.preload = "auto"
+      if (old) fadeOutAndRelease(old)
+      // streamed, not downloaded up front: play() fetches only what is needed
+      const audio = new Audio()
+      audio.preload = "none"
       audio.loop = true
+      audio.src = src
       current.current = audio
       start(audio)
     }, old ? SETTLE_MS : 120)
@@ -91,7 +107,7 @@ export function useTrack(src: string | null) {
   useEffect(
     () => () => {
       const a = current.current
-      if (a) fade(a, 0, 300).then(() => a.pause())
+      if (a) fadeOutAndRelease(a, 300)
       current.current = null
     },
     [],
