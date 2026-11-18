@@ -58,10 +58,10 @@ export const albums: Favorite[] = [
   album("morning-view", "Morning View", "Incubus", 2001, "Wish You Were Here", "wish-you-were-here.mp3", [118, 120, 123], [114, 129, 145]),
   album("hybrid-theory", "Hybrid Theory", "Linkin Park", 2000, "Crawling", "crawling.mp3", [116, 115, 106], [130, 121, 115]),
   // songs pending: set the file name once it's in public/about/songs
-  album("roots", "Roots", "Sepultura", 1996, "Roots Bloody Roots", null, [24, 5, 5], [81, 37, 23]),
-  album("a-tabua-de-esmeralda", "A Tábua de Esmeralda", "Jorge Ben", 1974, "Os Alquimistas Estão Chegando", null, [176, 172, 169], [163, 152, 147]),
-  album("dig-your-own-hole", "Dig Your Own Hole", "The Chemical Brothers", 1997, "Elektrobank", null, [52, 52, 52], [34, 34, 34]),
-  album("significant-other", "Significant Other", "Limp Bizkit", 1999, "Nookie", null, [132, 110, 138], [139, 111, 129]),
+  album("roots", "Roots", "Sepultura", 1996, "Roots Bloody Roots", "roots-bloody-roots.mp3", [24, 5, 5], [81, 37, 23]),
+  album("a-tabua-de-esmeralda", "A Tábua de Esmeralda", "Jorge Ben", 1974, "Os Alquimistas Estão Chegando", "os-alquimistas-estao-chegando.m4a", [176, 172, 169], [163, 152, 147]),
+  album("dig-your-own-hole", "Dig Your Own Hole", "The Chemical Brothers", 1997, "Elektrobank", "elektrobank.mp3", [52, 52, 52], [34, 34, 34]),
+  album("significant-other", "Significant Other", "Limp Bizkit", 1999, "Nookie", "nookie.mp3", [132, 110, 138], [139, 111, 129]),
 ]
 
 function film(slug: string, title: string, credit: string, edge: number[], tone: number[]): Favorite {
