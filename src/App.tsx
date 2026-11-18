@@ -20,8 +20,6 @@ import imgC2 from "@/imports/Home/b58f7daf888dd48b7986d465085c4fdbcd6f8c99.png"
 import imgC3 from "@/imports/Home/aa654c04a6f140ac88b78962f565617c7dcaa413.png"
 import imgC4 from "@/imports/Home/004629f91487238df39fc28fee710a8cab755db8.png"
 import imgC5 from "@/imports/Home/af2de6f8c956799a70ea9619414a9a2c14e518b4.png"
-import imgC6 from "@/imports/Home/cd6a0912d75915aaed59d8e5bec53dd84e0c0c5d.png"
-import imgC7 from "@/imports/Home/8fd822f7ab07d7a0c81ff2fde78f8afcc6dee1cb.png"
 
 // ── Playstation detail ────────────────────────────────────────────────────────
 import imgPS1 from "@/imports/Playstation-1/b9f92c64362555697b1bf52070200b5776449dd9.png"
@@ -60,6 +58,20 @@ import imgAv10 from "@/imports/Aviva/10.jpg"
 import vidAvMenu from "@/imports/Aviva/menu.mp4"
 import vidAvProduto from "@/imports/Aviva/produto.mp4"
 
+// ── São Paulo Metro detail ────────────────────────────────────────────────────
+import imgMtC1 from "@/imports/Metro/card-1.jpg"
+import imgMtC2 from "@/imports/Metro/card-2.jpg"
+import imgMt1 from "@/imports/Metro/01.jpg"
+import imgMt2 from "@/imports/Metro/02.jpg"
+import imgMt3 from "@/imports/Metro/03.jpg"
+import imgMt4 from "@/imports/Metro/04.jpg"
+import imgMt5 from "@/imports/Metro/05.jpg"
+import imgMt6 from "@/imports/Metro/06.jpg"
+import imgMt7 from "@/imports/Metro/07.jpg"
+import imgMt8 from "@/imports/Metro/08.jpg"
+import imgMt9 from "@/imports/Metro/09.jpg"
+import vidMtVisaoGeral from "@/imports/Metro/visao-geral.mp4"
+
 // ── Soundroom detail ──────────────────────────────────────────────────────────
 import imgSnd1 from "@/imports/Soundroom/5c1c7db8bda671d3301de454303f2df32f7f02e6.png"
 import imgSnd2 from "@/imports/Soundroom/b3e76a13886665494eb1e3bd7733419efa6ad114.png"
@@ -69,7 +81,7 @@ import imgSnd5 from "@/imports/Soundroom/608d83c88b6e1960d9629dc8ad826e8cca3bb30
 import imgSnd6 from "@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256d.png"
 
 // ── Types & data ──────────────────────────────────────────────────────────────
-type ProjectId = "playstation" | "decolar" | "aviva" | "soundroom"
+type ProjectId = "playstation" | "decolar" | "aviva" | "metro" | "soundroom"
 
 // A screen recording placed inside the flat screen of a mockup image.
 // The recordings show the 1067.43×690 prototype screen centred on a #2C2C2C
@@ -85,6 +97,8 @@ type ScreenVideo = {
   crop: [number, number, number, number]
   // the recording's size in px
   size: [number, number]
+  // corner radius of the screen, as a fraction of its width (phone screens)
+  radius?: number
 }
 
 const avivaMenuVideo = {
@@ -104,10 +118,19 @@ const avivaProductVideo = {
   size: [1920, 942] as [number, number],
 }
 
+// The Metro prototype was recorded at 90%: the 393×852 phone screen sits at
+// 783.15,88.6 (353.7×766.8, corners 28.8) on the 1920×944 #EBEBEB canvas.
+const metroVideo = {
+  src: vidMtVisaoGeral,
+  crop: [783.15, 88.6, 353.7, 766.8] as [number, number, number, number],
+  size: [1920, 944] as [number, number],
+  radius: 32 / 393,
+}
+
 // "bg" marks a mockup slide with a flat background: the mobile gallery shows
 // these whole (object-contain, blending into bg) instead of cropping them.
 // Full-bleed photos have no bg and are always object-cover.
-// Order on the home: Decolar, Aviva, PlayStation, Soundroom.
+// Order on the home: Decolar, Aviva, São Paulo Metro, PlayStation, Soundroom.
 const carouselItems: {
   img: string
   project: ProjectId
@@ -129,11 +152,21 @@ const carouselItems: {
       rect: [(176 / 2148) * 100, 21, (1795 / 2148) * 100, 58],
     },
   },
+  {
+    img: imgMtC1,
+    project: "metro",
+    bg: "#EBEBEB",
+    // the empty phone screen of the card: 2192×4766 at 2351,829 (of 6900×6424)
+    video: {
+      ...metroVideo,
+      frame: 6900 / 6424,
+      rect: [(2351 / 6900) * 100, (829 / 6424) * 100, (2192 / 6900) * 100, (4766 / 6424) * 100],
+    },
+  },
+  { img: imgMtC2, project: "metro" },
   { img: imgC0, project: "playstation", bg: "#0B0C10" },
   { img: imgC1, project: "playstation" },
   { img: imgC5, project: "soundroom", bg: "#0B0C10" },
-  { img: imgC6, project: "soundroom", bg: "#0B0C10" },
-  { img: imgC7, project: "soundroom", bg: "#0B0C10" },
 ]
 
 const psText = [
@@ -154,6 +187,14 @@ const avivaText = [
   `Aviva is a Brazilian independent denim label, and Remanesce is its first collection, developed as a collaborative project for the Fashion Design undergraduate thesis (TCC) at Universidade Anhembi Morumbi. The project brought together fashion and digital design to translate the brand’s identity, creative concept and craftsmanship into an online shopping experience.`,
   `The e-commerce was designed to balance editorial storytelling with functionality, allowing the collection’s garments, textures and visual language to take center stage. Through curated product discovery, immersive campaign imagery and intuitive navigation, the experience encourages exploration while maintaining a seamless shopping journey.`,
   `The result is a digital storefront that connects fashion, storytelling and commerce, reflecting the essence of Aviva while bringing its first collection to life online.`,
+]
+
+const metroText = [
+  `São Paulo is a city in constant movement. With millions of people relying on public transportation every day, navigating the metro system should be as simple and seamless as possible.`,
+  `Metro SP is a digital mobility concept designed to make everyday commuting more practical, accessible, and intuitive. The idea was to bring essential metro services together in one place, transforming the smartphone into a central tool for navigating the city.`,
+  `Through a clean and user-friendly interface, the app allows users to plan routes, explore metro stations, check real-time service updates, and manage their tickets without relying on physical cards or paper tickets.`,
+  `One of its core features is the integration of QR Code ticketing, allowing passengers to access the metro directly through their smartphones. Users can also recharge their balance, manage payments, and keep track of their transactions in just a few steps.`,
+  `Beyond convenience, the project explores how thoughtful digital experiences can contribute to urban mobility. By reducing friction in everyday interactions, simplifying access to information, and bringing essential services together, Metro SP aims to make public transportation more efficient and approachable for everyone.`,
 ]
 
 const soundroomText = [
@@ -202,6 +243,20 @@ const projects: Record<ProjectId, {
       // 160,155 on the dark 1388×1000 slide
       5: { ...avivaProductVideo, frame: 1388 / 1000, rect: avivaScreenRect },
       7: { ...avivaMenuVideo, frame: 1388 / 1000, rect: avivaScreenRect },
+    },
+  },
+  metro: {
+    title: "São Paulo Metro",
+    subtitle: "Design Study",
+    paragraphs: metroText,
+    images: [imgMt1, imgMt2, imgMt3, imgMt4, imgMt5, imgMt6, imgMt7, imgMt8, imgMt9],
+    videos: {
+      // 01 · overview: the phone screen, 393×852 at 720,377 on the 1834×1606 slide
+      0: {
+        ...metroVideo,
+        frame: 1834 / 1606,
+        rect: [(720 / 1834) * 100, (377 / 1606) * 100, (393 / 1834) * 100, (852 / 1606) * 100],
+      },
     },
   },
   playstation: {
@@ -306,7 +361,16 @@ function MockupVideo({
       >
         <div
           className="absolute overflow-hidden"
-          style={{ left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` }}
+          style={{
+            left: `${l}%`,
+            top: `${t}%`,
+            width: `${w}%`,
+            height: `${h}%`,
+            // circular corners: % of the width horizontally, of the height vertically
+            borderRadius: video.radius
+              ? `${video.radius * 100}% / ${video.radius * 100 * ((w * ar) / h)}%`
+              : undefined,
+          }}
         >
           <video
             ref={ref}
@@ -1142,6 +1206,7 @@ function ProjectPage({
 const pathToProject: Record<string, ProjectId> = {
   "/decolar": "decolar",
   "/aviva": "aviva",
+  "/sao-paulo-metro": "metro",
   "/sound-room": "soundroom",
   "/playstation-connect": "playstation",
 }
@@ -1161,6 +1226,7 @@ const aboutToPath: Record<AboutView, string> = {
 const projectToPath: Record<ProjectId, string> = {
   decolar: "/decolar",
   aviva: "/aviva",
+  metro: "/sao-paulo-metro",
   soundroom: "/sound-room",
   playstation: "/playstation-connect",
 }

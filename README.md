@@ -4,7 +4,7 @@ Portfólio de Gabriel Braga, designer (Product, UX/UI e Interaction Design) em S
 
 **Site:** https://bragahouser.com.br
 
-Home com carrossel de projetos e páginas de estudo de caso: **Decolar**, **Aviva**, **PlayStation Connect** e **Soundroom**.
+Home com carrossel de projetos e páginas de estudo de caso: **Decolar**, **Aviva**, **São Paulo Metro**, **PlayStation Connect** e **Soundroom**.
 
 ## Tecnologias
 
@@ -30,7 +30,7 @@ O site é estático e roda no **GitHub Pages**, a partir da branch `gh-pages`, c
 npm run deploy    # publica a pasta dist na branch gh-pages
 ```
 
-Como o GitHub Pages não tem roteamento no servidor, o passo `scripts/copy-routes.mjs` (executado no `npm run build`) gera um `index.html` para cada rota (`/decolar/`, `/aviva/`, `/sound-room/`, `/playstation-connect/`).
+Como o GitHub Pages não tem roteamento no servidor, o passo `scripts/copy-routes.mjs` (executado no `npm run build`) gera um `index.html` para cada rota (`/decolar/`, `/aviva/`, `/sao-paulo-metro/`, `/sound-room/`, `/playstation-connect/`).
 
 ## SEO
 

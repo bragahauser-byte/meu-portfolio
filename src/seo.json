@@ -2,7 +2,7 @@
   "siteUrl": "https://bragahouser.com.br",
   "home": {
     "title": "Gabriel Braga — Product & UX/UI Designer at Work & Co",
-    "description": "Gabriel Braga (Hauser / Houser), Product, UX/UI & Interaction Designer at Work & Co in São Paulo. Case studies: Decolar, Aviva, PlayStation Connect, Soundroom."
+    "description": "Gabriel Braga (Hauser / Houser), Product, UX/UI & Interaction Designer at Work & Co in São Paulo. Case studies: Decolar, Aviva, São Paulo Metro, PlayStation Connect, Soundroom."
   },
   "routes": {
     "decolar": {
@@ -16,6 +16,12 @@
       "name": "Aviva",
       "title": "Aviva — E-commerce Design | Gabriel Braga",
       "description": "Aviva e-commerce by Gabriel Braga: the online store for Remanesce, the first collection of an independent Brazilian denim label, created for the Fashion Design thesis at Universidade Anhembi Morumbi."
+    },
+    "metro": {
+      "path": "/sao-paulo-metro/",
+      "name": "São Paulo Metro",
+      "title": "São Paulo Metro — Design Study | Gabriel Braga",
+      "description": "São Paulo Metro design study by Gabriel Braga: a mobility app concept that brings QR Code ticketing, top-ups, route planning on the metro map and live line status into one clean experience."
     },
     "playstation": {
       "path": "/playstation-connect/",
