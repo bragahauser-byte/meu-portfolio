@@ -212,6 +212,9 @@ const projects: Record<ProjectId, {
   images: string[]
   // screen recordings layered on top of some images, by image index
   videos?: Record<number, ScreenVideo>
+  // where the cover crop is anchored, by image index (default: center).
+  // Slides whose phone bleeds off the bottom keep their top margin with "top".
+  positions?: Record<number, string>
   shortText?: boolean
 }> = {
   decolar: {
@@ -250,6 +253,8 @@ const projects: Record<ProjectId, {
     subtitle: "Design Study",
     paragraphs: metroText,
     images: [imgMt1, imgMt2, imgMt3, imgMt4, imgMt5, imgMt6, imgMt7, imgMt8, imgMt9],
+    // 02 · ticket and 07 · map: enlarged phones bleeding off the bottom
+    positions: { 1: "top", 6: "top" },
     videos: {
       // 01 · overview: the phone screen, 393×852 at 720,377 on the 1834×1606 slide
       0: {
@@ -379,7 +384,8 @@ function MockupVideo({
             loop
             playsInline
             autoPlay={playing && !reduceMotion}
-            preload="auto"
+            // recordings only download once their slide is actually showing
+            preload={playing ? "auto" : "none"}
             className="absolute max-w-none"
             style={{
               left: `${(-cx / cw) * 100}%`,
@@ -639,6 +645,14 @@ function HomePage({
   panelHidden: boolean
 }) {
   const [idx, setIdx] = useState(0)
+  // Desktop panel: every image sits in the same spot of the viewport, so the
+  // browser's lazy loading never kicks in and all of them (tens of MB) would
+  // download at once. Instead each one mounts when it is at most two steps
+  // ahead, so the next image is ready before it's needed and the current one
+  // never waits in line behind the rest.
+  const [reach, setReach] = useState(2)
+  useEffect(() => setReach((r) => Math.max(r, idx + 2)), [idx])
+  const isNear = (i: number) => i <= reach || Math.abs(i - idx) <= 1
   const [cursor, setCursor] = useState({ x: 0, y: 0 })
   const [viewCursorVisible, setViewCursorVisible] = useState(false)
   const [overLink, setOverLink] = useState(false)
@@ -804,6 +818,7 @@ function HomePage({
                     ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
                     : `opacity ${SWAP_OUT_MS}ms linear`,
               }
+              if (!isNear(i)) return null
               return (
                 <Fragment key={i}>
                   <img
@@ -811,7 +826,7 @@ function HomePage({
                     alt=""
                     loading={i === 0 ? "eager" : "lazy"}
                     decoding="async"
-                    fetchPriority={i === 0 ? "high" : "low"}
+                    fetchPriority={i === idx || i === 0 ? "high" : "low"}
                     data-active={i === idx}
                     className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
                     style={fade}
@@ -1099,6 +1114,7 @@ function ProjectPage({
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                style={{ objectPosition: project.positions?.[i] }}
               />
               {project.videos?.[i] && !wideLayout && (
                 <MockupVideo video={project.videos[i]} fit="cover" playing={mediaVisible} />
@@ -1187,6 +1203,7 @@ function ProjectPage({
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                  style={{ objectPosition: project.positions?.[i] }}
                 />
                 {project.videos?.[i] && wideLayout && (
                   <MockupVideo video={project.videos[i]} fit="cover" playing={mediaVisible} />
@@ -1337,7 +1354,9 @@ function Flight({
 type Stage = "idle" | "opening" | "open" | "closing"
 
 // what the intro waits for (besides the fonts): the Home's images
-const introAssets = carouselItems.map((c) => c.img)
+// The intro waits for the images seen first, not the whole carousel: the
+// rest load progressively as you browse (see the panel in HomePage).
+const introAssets = carouselItems.slice(0, 3).map((c) => c.img)
 
 export default function App() {
   const location = useLocation()

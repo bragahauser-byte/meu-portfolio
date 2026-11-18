@@ -25,7 +25,7 @@ function album(
   artist: string,
   year: number,
   track: string,
-  file: string,
+  file: string | null, // null until the song file is in public/about/songs
   edge: number[],
   tone: number[],
 ): Favorite {
@@ -36,7 +36,7 @@ function album(
     cover: cover("albums", slug),
     edge: rgb(edge),
     tone: rgb(tone),
-    track: { title: track, src: song(file) },
+    track: file ? { title: track, src: song(file) } : undefined,
   }
 }
 
@@ -57,6 +57,11 @@ export const albums: Favorite[] = [
   album("kid-a", "Kid A", "Radiohead", 2000, "Everything in Its Right Place", "everything-in-its-right-place.m4a", [38, 55, 72], [123, 124, 125]),
   album("morning-view", "Morning View", "Incubus", 2001, "Wish You Were Here", "wish-you-were-here.mp3", [118, 120, 123], [114, 129, 145]),
   album("hybrid-theory", "Hybrid Theory", "Linkin Park", 2000, "Crawling", "crawling.mp3", [116, 115, 106], [130, 121, 115]),
+  // songs pending: set the file name once it's in public/about/songs
+  album("roots", "Roots", "Sepultura", 1996, "Roots Bloody Roots", null, [24, 5, 5], [81, 37, 23]),
+  album("a-tabua-de-esmeralda", "A Tábua de Esmeralda", "Jorge Ben", 1974, "Os Alquimistas Estão Chegando", null, [176, 172, 169], [163, 152, 147]),
+  album("dig-your-own-hole", "Dig Your Own Hole", "The Chemical Brothers", 1997, "Elektrobank", null, [52, 52, 52], [34, 34, 34]),
+  album("significant-other", "Significant Other", "Limp Bizkit", 1999, "Nookie", null, [132, 110, 138], [139, 111, 129]),
 ]
 
 function film(slug: string, title: string, credit: string, edge: number[], tone: number[]): Favorite {
@@ -115,26 +120,29 @@ const g = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q
 
 export const aboutParagraphs: Segment[][] = [
   [
-    "I've been designing long before I knew what design was. Born and raised in São Paulo, with family roots in ",
+    "I've been drawn to creating things for as long as I can remember. Born and raised in São Paulo, with family roots in ",
     { text: "Tocos do Moji", href: g("tocos do moji mg") },
     ", a small town in ",
     { text: "Minas Gerais", href: g("Minas Gerais") },
-    ", I've always been curious about the world around me.",
+    ", I've always been curious about the world around me and the possibilities of making things from scratch.",
   ],
   [
-    "As a kid, I recreated scenes from cartoons using paper and cardboard, building worlds for my toys. As a teenager, that same curiosity moved to the internet: I started experimenting with 3D animations, video intros, thumbnails, banners, and logos for gaming channels. What started as pure curiosity slowly became the foundation of my profession.",
+    "As a kid, I spent hours recreating scenes from cartoons with paper and cardboard, building little worlds for my toys. Years later, that same urge to create found a new playground: the internet. During my teenage years, I began experimenting with 3D animations, video intros, thumbnails, banners, and logos for gaming channels. What started as a hobby gradually turned into something more — my first steps into the world of design.",
   ],
   [
-    "I see design as a way of creating tools that make people's lives easier. Inspired by ",
+    "Over time, I became increasingly interested not just in how things look, but in how they work, how they communicate, and how they shape people's experiences. That's what draws me to design: the opportunity to turn complex ideas into clear, thoughtful, and useful experiences.",
+  ],
+  [
+    "I'm particularly inspired by the work and thinking of ",
     { text: "Massimo Vignelli", href: g("Massimo Vignelli") },
     ", ",
     { text: "Dieter Rams", href: g("Dieter Rams") },
     ", and ",
     { text: "Paul Rand", href: g("Paul Rand") },
-    ", I believe good design is built on intention, proportion, relationships, and reduction. It's about understanding what matters, questioning what can be improved, and removing everything that gets in the way.",
+    ". Their approaches reinforce something I believe in: good design comes from intention. It's about understanding the problem, making deliberate decisions, finding the right relationships between elements, and knowing what to leave out.",
   ],
   [
-    "My process is driven by curiosity and a willingness to learn. I enjoy exploring new tools, testing different approaches, exchanging ideas, and refining my craft. I value thoughtful decisions over easy consensus, and believe that form should always serve a purpose.",
+    "I'm naturally curious and enjoy learning by doing — exploring new tools, experimenting with different approaches, exchanging ideas, and constantly refining my work. I value critical thinking, meaningful collaboration, and decisions grounded in purpose rather than convention.",
   ],
   [
     "Ultimately, the best design is the kind that gets out of the way, allowing the experience to speak for itself. If it doesn't make someone's life a little easier, what's the point?",
