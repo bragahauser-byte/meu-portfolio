@@ -2,20 +2,26 @@
   "siteUrl": "https://bragahouser.com.br",
   "home": {
     "title": "Gabriel Braga — Product & UX/UI Designer at Work & Co",
-    "description": "Gabriel Braga (Hauser / Houser), Product, UX/UI & Interaction Designer at Work & Co in São Paulo. Case studies: PlayStation Connect, Decolar, Soundroom."
+    "description": "Gabriel Braga (Hauser / Houser), Product, UX/UI & Interaction Designer at Work & Co in São Paulo. Case studies: Decolar, Aviva, PlayStation Connect, Soundroom."
   },
   "routes": {
-    "playstation": {
-      "path": "/playstation-connect/",
-      "name": "PlayStation Connect",
-      "title": "PlayStation Connect — UX/UI Case Study | Gabriel Braga",
-      "description": "PlayStation Connect design study by Gabriel Braga, Product & UX/UI Designer: a native PC launcher concept bringing PlayStation games, account continuity and subscription to PC gamers."
-    },
     "decolar": {
       "path": "/decolar/",
       "name": "Decolar",
       "title": "Decolar — UX/UI Case Study | Gabriel Braga",
       "description": "Decolar design study by Gabriel Braga, Product & UX/UI Designer: a quiz-based flow that helps groups of friends align on a trip, with destination matches and a shared piggy bank."
+    },
+    "aviva": {
+      "path": "/aviva/",
+      "name": "Aviva",
+      "title": "Aviva — E-commerce Design | Gabriel Braga",
+      "description": "Aviva e-commerce by Gabriel Braga: the online store for Remanesce, the first collection of an independent Brazilian denim label, created for the Fashion Design thesis at Universidade Anhembi Morumbi."
+    },
+    "playstation": {
+      "path": "/playstation-connect/",
+      "name": "PlayStation Connect",
+      "title": "PlayStation Connect — UX/UI Case Study | Gabriel Braga",
+      "description": "PlayStation Connect design study by Gabriel Braga, Product & UX/UI Designer: a native PC launcher concept bringing PlayStation games, account continuity and subscription to PC gamers."
     },
     "soundroom": {
       "path": "/sound-room/",

@@ -43,6 +43,22 @@ import imgDec8 from "@/imports/Decolar/8.jpg"
 import imgDec9 from "@/imports/Decolar/9.jpg"
 import imgDec10 from "@/imports/Decolar/10.jpg"
 
+// ── Aviva detail ──────────────────────────────────────────────────────────────
+import imgAvC1 from "@/imports/Aviva/card-1.jpg"
+import imgAvC2 from "@/imports/Aviva/card-2.jpg"
+import imgAvC3 from "@/imports/Aviva/card-3.jpg"
+import imgAv1 from "@/imports/Aviva/01.jpg"
+import imgAv2 from "@/imports/Aviva/02.jpg"
+import imgAv3 from "@/imports/Aviva/03.jpg"
+import imgAv4 from "@/imports/Aviva/04.jpg"
+import imgAv5 from "@/imports/Aviva/05.jpg"
+import imgAv6 from "@/imports/Aviva/06.jpg"
+import imgAv7 from "@/imports/Aviva/07.jpg"
+import imgAv8 from "@/imports/Aviva/08.jpg"
+import imgAv9 from "@/imports/Aviva/09.jpg"
+import vidAvMenu from "@/imports/Aviva/menu.mp4"
+import vidAvProduto from "@/imports/Aviva/produto.mp4"
+
 // ── Soundroom detail ──────────────────────────────────────────────────────────
 import imgSnd1 from "@/imports/Soundroom/5c1c7db8bda671d3301de454303f2df32f7f02e6.png"
 import imgSnd2 from "@/imports/Soundroom/b3e76a13886665494eb1e3bd7733419efa6ad114.png"
@@ -52,17 +68,62 @@ import imgSnd5 from "@/imports/Soundroom/608d83c88b6e1960d9629dc8ad826e8cca3bb30
 import imgSnd6 from "@/imports/Soundroom/d3277e896ea1e722febcfba8f22e8cdab3ba256d.png"
 
 // ── Types & data ──────────────────────────────────────────────────────────────
-type ProjectId = "playstation" | "decolar" | "soundroom"
+type ProjectId = "playstation" | "decolar" | "aviva" | "soundroom"
+
+// A screen recording placed inside the flat screen of a mockup image.
+// The recordings show the 1067.43×690 prototype screen centred on a #2C2C2C
+// canvas; only that screen is shown, cropped exactly, on top of the same
+// screen in the still image (which stays underneath as its poster).
+type ScreenVideo = {
+  src: string
+  // the image's own aspect ratio (width / height)
+  frame: number
+  // the screen inside the image, in % of the image: left, top, width, height
+  rect: [number, number, number, number]
+  // the screen inside the recording, in px: x, y, width, height
+  crop: [number, number, number, number]
+  // the recording's size in px
+  size: [number, number]
+}
+
+const avivaMenuVideo = {
+  src: vidAvMenu,
+  crop: [428, 129, 1064, 686] as [number, number, number, number],
+  size: [1920, 944] as [number, number],
+}
+const avivaProductVideo = {
+  src: vidAvProduto,
+  crop: [428, 127, 1064, 686] as [number, number, number, number],
+  size: [1920, 942] as [number, number],
+}
 
 // "bg" marks a mockup slide with a flat background: the mobile gallery shows
 // these whole (object-contain, blending into bg) instead of cropping them.
 // Full-bleed photos have no bg and are always object-cover.
-const carouselItems: { img: string; project: ProjectId; bg?: string }[] = [
-  { img: imgC0, project: "playstation", bg: "#0B0C10" },
-  { img: imgC1, project: "playstation" },
+// Order on the home: Decolar, Aviva, PlayStation, Soundroom.
+const carouselItems: {
+  img: string
+  project: ProjectId
+  bg?: string
+  video?: ScreenVideo
+}[] = [
   { img: imgC2, project: "decolar", bg: "#F4F5F0" },
   { img: imgC3, project: "decolar" },
   { img: imgC4, project: "decolar", bg: "#F4F5F0" },
+  { img: imgAvC1, project: "aviva" },
+  { img: imgAvC2, project: "aviva" },
+  {
+    img: imgAvC3,
+    project: "aviva",
+    bg: "#2C2C2C",
+    video: {
+      ...avivaMenuVideo,
+      frame: 2148 / 2000,
+      rect: [(176 / 2148) * 100, 21, (1795 / 2148) * 100, 58],
+    },
+  },
+  { img: imgC0, project: "playstation", bg: "#0B0C10" },
+  { img: imgC1, project: "playstation" },
   { img: imgC5, project: "soundroom", bg: "#0B0C10" },
   { img: imgC6, project: "soundroom", bg: "#0B0C10" },
   { img: imgC7, project: "soundroom", bg: "#0B0C10" },
@@ -82,6 +143,12 @@ const decolarText = [
   `As a result, the process becomes less confusing and more guided, increasing the chances of the group actually making a decision. And if it's not yet time to buy, the experience continues through a shared piggy bank, helping the group manage money together and stay engaged until the trip finally happens.`,
 ]
 
+const avivaText = [
+  `Aviva is a Brazilian independent denim label, and Remanesce is its first collection, developed as a collaborative project for the Fashion Design undergraduate thesis (TCC) at Universidade Anhembi Morumbi. The project brought together fashion and digital design to translate the brand’s identity, creative concept and craftsmanship into an online shopping experience.`,
+  `The e-commerce was designed to balance editorial storytelling with functionality, allowing the collection’s garments, textures and visual language to take center stage. Through curated product discovery, immersive campaign imagery and intuitive navigation, the experience encourages exploration while maintaining a seamless shopping journey.`,
+  `The result is a digital storefront that connects fashion, storytelling and commerce, reflecting the essence of Aviva while bringing its first collection to life online.`,
+]
+
 const soundroomText = [
   `Music consumption has never been so intense on a global scale, with listeners dedicating hours a week to listening. Even so, the way music is experienced and discussed has become progressively superficial, shaped by algorithms and fragmented habits. Soundroom emerges in this context proposing a change of perspective: treating music not only as content to be consumed, but as culture to be reflected upon, shared, and debated.`,
   `The main friction lies in the contrast between frequency and depth. Although music is a constant part of daily life, meaningful engagement — especially with full albums and independent artists — has been weakening. Listening becomes passive, guided by automatic recommendations, while critical analysis is restricted to a few. This limits discovery and impoverishes the user's relationship with music.`,
@@ -95,13 +162,9 @@ const projects: Record<ProjectId, {
   subtitle: string
   paragraphs: string[]
   images: string[]
+  // screen recordings layered on top of some images, by image index
+  videos?: Record<number, ScreenVideo>
 }> = {
-  playstation: {
-    title: "Playstation",
-    subtitle: "Design study",
-    paragraphs: psText,
-    images: [imgPS1, imgPS2, imgPS3, imgPS4, imgPS5, imgPS6],
-  },
   decolar: {
     title: "Decolar",
     subtitle: "Design study",
@@ -118,6 +181,28 @@ const projects: Record<ProjectId, {
       imgDec9,
       imgDec10,
     ],
+  },
+  aviva: {
+    title: "Aviva",
+    subtitle: "E-commerce design",
+    paragraphs: avivaText,
+    images: [imgAv1, imgAv2, imgAv3, imgAv4, imgAv5, imgAv6, imgAv7, imgAv8, imgAv9],
+    videos: {
+      // 06 · product page: the whole slide width is the screen, under a 51px band
+      5: { ...avivaProductVideo, frame: 1388 / 1000, rect: [0, 5.1, 100, 89.722] },
+      // 08 · about: the screen centred on the dark slide
+      7: {
+        ...avivaMenuVideo,
+        frame: 1388 / 1000,
+        rect: [(160 / 1388) * 100, 15.5, (1067.43 / 1388) * 100, 69],
+      },
+    },
+  },
+  playstation: {
+    title: "Playstation",
+    subtitle: "Design study",
+    paragraphs: psText,
+    images: [imgPS1, imgPS2, imgPS3, imgPS4, imgPS5, imgPS6],
   },
   soundroom: {
     title: "Soundroom",
@@ -163,6 +248,80 @@ function useIsDesktop() {
 
 function usePrefersReducedMotion() {
   return useMediaQuery("(prefers-reduced-motion: reduce)")
+}
+
+// ── Screen recordings inside mockups ──────────────────────────────────────────
+// Sits over an <img> that fills the same box with object-fit cover/contain.
+// The wrapper is a size container, so the inner box reproduces exactly the
+// rectangle the image is drawn into (cqw/cqh), and the video is placed in %
+// of that rectangle: it stays locked to the screen at any size and is never
+// stretched, because the cropped screen keeps the recording's proportions.
+function MockupVideo({
+  video,
+  fit,
+  playing = true,
+}: {
+  video: ScreenVideo
+  fit: "cover" | "contain"
+  playing?: boolean
+}) {
+  const ref = useRef<HTMLVideoElement>(null)
+  const reduceMotion = usePrefersReducedMotion()
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (playing && !reduceMotion) el.play().catch(() => undefined)
+    else el.pause()
+  }, [playing, reduceMotion])
+
+  const [l, t, w, h] = video.rect
+  const [cx, cy, cw, ch] = video.crop
+  const [vw, vh] = video.size
+  const ar = video.frame
+  const boxW =
+    fit === "cover"
+      ? `max(100cqw, calc(100cqh * ${ar}))`
+      : `min(100cqw, calc(100cqh * ${ar}))`
+
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ containerType: "size" }}
+    >
+      <div
+        className="absolute left-1/2 top-1/2"
+        style={{
+          width: boxW,
+          aspectRatio: String(ar),
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <div
+          className="absolute overflow-hidden"
+          style={{ left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` }}
+        >
+          <video
+            ref={ref}
+            src={video.src}
+            muted
+            loop
+            playsInline
+            autoPlay={playing && !reduceMotion}
+            preload="auto"
+            className="absolute max-w-none"
+            style={{
+              left: `${(-cx / cw) * 100}%`,
+              top: `${(-cy / ch) * 100}%`,
+              width: `${(vw / cw) * 100}%`,
+              height: `${(vh / ch) * 100}%`,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Cursors ───────────────────────────────────────────────────────────────────
@@ -566,26 +725,39 @@ function HomePage({
           onClick={openActive}
         >
           <div className="panel-media absolute inset-0">
-            {carouselItems.map((item, i) => (
-              <img
-                key={i}
-                src={item.img}
-                alt=""
-                loading={i === 0 ? "eager" : "lazy"}
-                decoding="async"
-                fetchPriority={i === 0 ? "high" : "low"}
-                data-active={i === idx}
-                className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
-                style={{
-                  opacity: i === idx ? 1 : 0,
-                  // incoming waits for the outgoing to clear: fade → --c-media → fade
-                  transition:
-                    i === idx
-                      ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
-                      : `opacity ${SWAP_OUT_MS}ms linear`,
-                }}
-              />
-            ))}
+            {carouselItems.map((item, i) => {
+              const fade: CSSProperties = {
+                opacity: i === idx ? 1 : 0,
+                // incoming waits for the outgoing to clear: fade → --c-media → fade
+                transition:
+                  i === idx
+                    ? `opacity ${SWAP_IN_MS}ms var(--ease-standard) ${SWAP_OUT_MS}ms`
+                    : `opacity ${SWAP_OUT_MS}ms linear`,
+              }
+              return (
+                <Fragment key={i}>
+                  <img
+                    src={item.img}
+                    alt=""
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={i === 0 ? "high" : "low"}
+                    data-active={i === idx}
+                    className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none"
+                    style={fade}
+                  />
+                  {item.video && isDesktop && (
+                    <div className="absolute inset-0" style={fade}>
+                      <MockupVideo
+                        video={item.video}
+                        fit="cover"
+                        playing={i === idx && isActive && !panelHidden}
+                      />
+                    </div>
+                  )}
+                </Fragment>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -640,6 +812,13 @@ function HomePage({
                 item.bg ? "object-contain" : "object-cover"
               }`}
             />
+            {item.video && !isDesktop && (
+              <MockupVideo
+                video={item.video}
+                fit={item.bg ? "contain" : "cover"}
+                playing={isActive}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -794,6 +973,8 @@ function ProjectPage({
   const desktopMediaRef = useRef<HTMLDivElement>(null)
   const stickyTop = useStickyTop(textBlockRef)
   const hasHover = useHasHover()
+  // only the visible layout plays its recordings
+  const wideLayout = useMediaQuery("(min-width: 900px)")
 
   const textStyle: CSSProperties = {
     opacity: textVisible ? 1 : 0,
@@ -849,6 +1030,9 @@ function ProjectPage({
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
               />
+              {project.videos?.[i] && !wideLayout && (
+                <MockupVideo video={project.videos[i]} fit="cover" playing={mediaVisible} />
+              )}
             </div>
           ))}
         </div>
@@ -921,6 +1105,9 @@ function ProjectPage({
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
                 />
+                {project.videos?.[i] && wideLayout && (
+                  <MockupVideo video={project.videos[i]} fit="cover" playing={mediaVisible} />
+                )}
               </div>
             ))}
           </div>
@@ -935,6 +1122,7 @@ function ProjectPage({
 // ── Root ──────────────────────────────────────────────────────────────────────
 const pathToProject: Record<string, ProjectId> = {
   "/decolar": "decolar",
+  "/aviva": "aviva",
   "/sound-room": "soundroom",
   "/playstation-connect": "playstation",
 }
@@ -953,6 +1141,7 @@ const aboutToPath: Record<AboutView, string> = {
 }
 const projectToPath: Record<ProjectId, string> = {
   decolar: "/decolar",
+  aviva: "/aviva",
   soundroom: "/sound-room",
   playstation: "/playstation-connect",
 }
