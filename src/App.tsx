@@ -56,6 +56,7 @@ import imgAv6 from "@/imports/Aviva/06.jpg"
 import imgAv7 from "@/imports/Aviva/07.jpg"
 import imgAv8 from "@/imports/Aviva/08.jpg"
 import imgAv9 from "@/imports/Aviva/09.jpg"
+import imgAv10 from "@/imports/Aviva/10.jpg"
 import vidAvMenu from "@/imports/Aviva/menu.mp4"
 import vidAvProduto from "@/imports/Aviva/produto.mp4"
 
@@ -91,6 +92,12 @@ const avivaMenuVideo = {
   crop: [428, 129, 1064, 686] as [number, number, number, number],
   size: [1920, 944] as [number, number],
 }
+const avivaScreenRect: [number, number, number, number] = [
+  (160 / 1388) * 100,
+  15.5,
+  (1067.43 / 1388) * 100,
+  69,
+]
 const avivaProductVideo = {
   src: vidAvProduto,
   crop: [428, 127, 1064, 686] as [number, number, number, number],
@@ -164,6 +171,7 @@ const projects: Record<ProjectId, {
   images: string[]
   // screen recordings layered on top of some images, by image index
   videos?: Record<number, ScreenVideo>
+  shortText?: boolean
 }> = {
   decolar: {
     title: "Decolar",
@@ -186,16 +194,14 @@ const projects: Record<ProjectId, {
     title: "Aviva",
     subtitle: "E-commerce design",
     paragraphs: avivaText,
-    images: [imgAv1, imgAv2, imgAv3, imgAv4, imgAv5, imgAv6, imgAv7, imgAv8, imgAv9],
+    images: [imgAv1, imgAv2, imgAv3, imgAv4, imgAv5, imgAv6, imgAv7, imgAv8, imgAv9, imgAv10],
+    // short text: title at the top, body resting on the bottom margin
+    shortText: true,
     videos: {
-      // 06 · product page: the whole slide width is the screen, under a 51px band
-      5: { ...avivaProductVideo, frame: 1388 / 1000, rect: [0, 5.1, 100, 89.722] },
-      // 08 · about: the screen centred on the dark slide
-      7: {
-        ...avivaMenuVideo,
-        frame: 1388 / 1000,
-        rect: [(160 / 1388) * 100, 15.5, (1067.43 / 1388) * 100, 69],
-      },
+      // 06 · product page and 08 · menu: the same 1067.43×690 screen at
+      // 160,155 on the dark 1388×1000 slide
+      5: { ...avivaProductVideo, frame: 1388 / 1000, rect: avivaScreenRect },
+      7: { ...avivaMenuVideo, frame: 1388 / 1000, rect: avivaScreenRect },
     },
   },
   playstation: {
@@ -1061,10 +1067,23 @@ function ProjectPage({
         >
           <div
             ref={textBlockRef}
-            style={{ position: "sticky", top: stickyTop, ...textStyle }}
+            style={{
+              position: "sticky",
+              top: stickyTop,
+              ...textStyle,
+              // A short text rests on the bottom margin, title kept at the top
+              ...(project.shortText
+                ? {
+                    height: "calc(100vh - 64px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }
+                : null),
+            }}
           >
             {/* Body starts at y=251 in the 1080px frame: 32 + 64 + 155. */}
-            <div style={{ marginBottom: "min(155px, 14.35vh)" }}>
+            <div style={{ marginBottom: project.shortText ? 32 : "min(155px, 14.35vh)" }}>
               <p className="type-title m-0 text-label">{project.title}</p>
               <p className="type-title m-0 text-secondary">
                 {project.subtitle}
