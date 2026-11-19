@@ -62,7 +62,7 @@ function DotCursor() {
       if (e.pointerType !== "mouse") return
       el.style.opacity = "1"
       el.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`
-      const over = !!(e.target as Element | null)?.closest?.("a, button")
+      const over = !!(e.target as Element | null)?.closest?.('a, button, [data-hover="true"]')
       el.dataset.link = String(over)
     }
     const leave = () => (el.style.opacity = "0")
@@ -309,12 +309,29 @@ function FavoritesScene({
   const isGames = kind === "games"
   const [viewing, setViewing] = useState<number | null>(null)
   const [hidden, setHidden] = useState<number | null>(null)
+  // shelf hints: browse, then open; gone once a case has been opened
+  const [opened, setOpened] = useState(() => {
+    try {
+      return sessionStorage.getItem("games:opened") === "1"
+    } catch {
+      return false
+    }
+  })
+  const touchUI = useMedia("(hover: none)")
 
   const onActiveChange = useCallback((i: number) => setActive(i), [])
   const onActivate = useCallback(
     (i: number) => {
       if (kind === "albums") toggle()
-      if (kind === "games") setViewing(i)
+      if (kind === "games") {
+        setViewing(i)
+        setOpened(true)
+        try {
+          sessionStorage.setItem("games:opened", "1")
+        } catch {
+          /* private mode */
+        }
+      }
     },
     [kind, toggle],
   )
@@ -393,9 +410,22 @@ function FavoritesScene({
         )}
       </div>
 
-      {!track && (!touched || isGames) && (
-        <p className="about-hint about-type m-0" aria-hidden="true" data-quiet={viewing !== null}>
-          {isGames ? (touched ? "Click a case to open it" : "Scroll · Click to open") : "Scroll"}
+      {!track && !isGames && !touched && (
+        <p className="about-hint about-type m-0" aria-hidden="true">
+          Scroll
+        </p>
+      )}
+      {isGames && !opened && (
+        <p className="about-hint games-hint about-type m-0" aria-hidden="true" data-quiet={viewing !== null}>
+          {!touched && (
+            <>
+              <span className="games-hint-icon" data-kind="scroll" />
+              <span>{touchUI ? "Swipe to browse" : "Scroll to browse"}</span>
+              <span className="games-hint-sep" />
+            </>
+          )}
+          <span className="games-hint-icon" data-kind="tap" />
+          <span>{touchUI ? "Tap a case to open it" : "Click a case to open it"}</span>
         </p>
       )}
 

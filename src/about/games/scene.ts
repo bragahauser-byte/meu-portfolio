@@ -1,6 +1,6 @@
 import * as THREE from "three"
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js"
-import { buildCase } from "./models"
+import { buildCase, disposeSleeveTexture } from "./models"
 import type { CaseRig } from "./models"
 import type { PlatformId } from "./platforms"
 
@@ -11,9 +11,14 @@ import type { PlatformId } from "./platforms"
 //
 // Motion: the case flies out of its exact place on the shelf (the CSS box's
 // screen rectangle) to the centre, opens on its two hinges, and can then be
-// turned freely by hand. Closing plays the same path backwards.
+// turned freely by hand. A tap on a disc lifts it off the hub (straight up,
+// clear of the grip), then carries it towards the viewer, where it can be
+// turned on its own; another tap (or "Put back") flies it home. Closing
+// plays everything backwards.
 
 export type Tier = "high" | "low"
+
+export type SceneEvent = { type: "turn" } | { type: "disc"; index: number | null } | { type: "disc-turn" } | { type: "hover"; disc: boolean }
 
 export type SceneOptions = {
   canvas: HTMLCanvasElement
@@ -22,7 +27,8 @@ export type SceneOptions = {
   discUrls: string[]
   reducedMotion: boolean
   tier: Tier
-  onInteract?: () => void
+  region?: () => { x: number; w: number } // usable area (px), e.g. right half on a folded Duo
+  onEvent?: (e: SceneEvent) => void
 }
 
 export type GameScene = {
@@ -30,8 +36,9 @@ export type GameScene = {
   flyIn: (rect: DOMRect) => Promise<void>
   open: () => Promise<void>
   close: (rect: DOMRect | null, onFly?: () => void) => Promise<void>
-  toggleDiscs: () => boolean
-  hasDiscs: boolean
+  takeOut: (index: number) => void
+  putBack: () => void
+  discCount: number
   reset: () => void
   rotateBy: (yaw: number, pitch: number) => void
   zoomBy: (f: number) => void
@@ -48,7 +55,7 @@ const easeHinge = (t: number) => {
   return clamp(k, 0, 1)
 }
 
-type Tween = { from: number; to: number; dur: number; t0: number; ease: (t: number) => number; set: (v: number) => void; done: () => void }
+type Tween = { id?: string; from: number; to: number; dur: number; t0: number; ease: (t: number) => number; set: (v: number) => void; done: () => void }
 
 function loadTexture(loader: THREE.TextureLoader, url: string, aniso: number) {
   return new Promise<THREE.Texture>((resolve, reject) => {
@@ -67,6 +74,7 @@ function loadTexture(loader: THREE.TextureLoader, url: string, aniso: number) {
 
 export function createGameScene(opts: SceneOptions): GameScene {
   const { canvas, tier, reducedMotion } = opts
+  const emit = (e: SceneEvent) => opts.onEvent?.(e)
   const dpr = Math.min(window.devicePixelRatio || 1, tier === "high" ? 2 : 1.5)
 
   const renderer = new THREE.WebGLRenderer({
@@ -101,12 +109,12 @@ export function createGameScene(opts: SceneOptions): GameScene {
   key.position.copy(keyPos)
   key.castShadow = tier === "high"
   key.shadow.mapSize.set(2048, 2048)
-  key.shadow.camera.left = -220
-  key.shadow.camera.right = 220
-  key.shadow.camera.top = 220
-  key.shadow.camera.bottom = -220
-  key.shadow.camera.near = 50
-  key.shadow.camera.far = 1200
+  key.shadow.camera.left = -240
+  key.shadow.camera.right = 240
+  key.shadow.camera.top = 240
+  key.shadow.camera.bottom = -240
+  key.shadow.camera.near = 20
+  key.shadow.camera.far = 1400
   key.shadow.bias = -0.0004
   key.shadow.normalBias = 0.6
   key.shadow.radius = 4
@@ -128,14 +136,16 @@ export function createGameScene(opts: SceneOptions): GameScene {
   const st = {
     fly: 0, // 0 = on the shelf, 1 = centred
     open: 0,
-    lift: 0,
     zoom: 1,
     zoomTarget: 1,
     start: new THREE.Vector3(),
-    startDist: 1,
   }
-  const user = new THREE.Quaternion()
+  const user = new THREE.Quaternion() // the case, turned by hand
+  const discUser = new THREE.Quaternion() // the disc in hand, turned on its own
+  const discP: number[] = opts.discUrls.map(() => 0) // 0 = on its hub, 1 = in hand
+  let active: number | null = null
   const vel = { x: 0, y: 0 }
+  let dragTarget: "case" | "disc" = "case"
   let dragging = false
   let fitDist = 800
   let disposed = false
@@ -143,10 +153,18 @@ export function createGameScene(opts: SceneOptions): GameScene {
   let lastT = performance.now()
   const tweens: Tween[] = []
 
-  const tween = (from: number, to: number, dur: number, ease: (t: number) => number, set: (v: number) => void) =>
+  const tween = (from: number, to: number, dur: number, ease: (t: number) => number, set: (v: number) => void, id?: string) =>
     new Promise<void>((resolve) => {
       if (reducedMotion) dur = Math.min(dur, 180)
-      tweens.push({ from, to, dur, t0: performance.now(), ease, set, done: resolve })
+      if (id) {
+        // a new tween on the same property replaces the old one (no fighting)
+        for (let i = tweens.length - 1; i >= 0; i--)
+          if (tweens[i].id === id) {
+            tweens[i].done()
+            tweens.splice(i, 1)
+          }
+      }
+      tweens.push({ id, from, to, dur, t0: performance.now(), ease, set, done: resolve })
       invalidate()
     })
 
@@ -157,36 +175,62 @@ export function createGameScene(opts: SceneOptions): GameScene {
   const eShelf = new THREE.Euler(-0.035, 0.07, 0)
   const eClosed = new THREE.Euler(-0.08, 0.42, 0.0)
   const eOpen = new THREE.Euler(-0.2, -0.08, 0.0)
+  const qDiscBase = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.3, 0.42, 0.05))
 
   // ── layout ──
   const size = { w: 1, h: 1 }
+  const area = { x: 0, w: 1, cx: 0.5 } // the usable region and its centre
   let portrait = false
+  let regionAspect = 1
+  const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
   const resize = () => {
     size.w = window.innerWidth
     size.h = window.innerHeight
     renderer.setSize(size.w, size.h, false)
     camera.aspect = size.w / size.h
-    const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
+    const r = opts.region?.() ?? { x: 0, w: size.w }
+    area.x = r.x
+    area.w = Math.max(200, r.w)
+    area.cx = r.x + area.w / 2
+    regionAspect = area.w / size.h
+    // shift the projection centre into the usable region (folded Duo:
+    // the right half), keeping the whole canvas so nothing is clipped
+    if (Math.abs(area.cx - size.w / 2) > 1) camera.setViewOffset(size.w, size.h, size.w / 2 - area.cx, 0, size.w, size.h)
+    else camera.clearViewOffset()
     const spec = rig?.spec
     // phones in portrait: present the open case standing up (cover on top,
     // tray below), so it fills the tall screen instead of a thin strip
-    portrait = camera.aspect < 0.85
+    portrait = regionAspect < 0.85
     eOpen.z = portrait ? -Math.PI / 2 : 0
     const wide = spec ? spec.w * 2 + spec.d + 24 : 310
     const tall = spec ? spec.h + 24 : 214
     const openW = portrait ? tall : wide
     const openH = portrait ? wide : tall
-    const mobile = size.w < 768
-    const fillW = mobile ? 0.92 : 0.62
-    const fillH = mobile ? 0.66 : 0.7
-    fitDist = Math.max(openH / (2 * tan * fillH), openW / (2 * tan * camera.aspect * fillW))
+    const compact = area.w < 768
+    const fillW = compact ? 0.9 : 0.62
+    // keep clear of the credits / tools rows on short screens
+    const fillH = Math.min(compact ? 0.64 : 0.7, (size.h - 190) / size.h)
+    fitDist = Math.max(openH / (2 * tan * fillH), openW / (2 * tan * regionAspect * fillW))
     camera.updateProjectionMatrix()
     invalidate()
   }
 
-  // ── presentation pose ──
+  // where a disc in hand floats: in front of the case, about half the
+  // smaller side of the screen across
+  const presentDist = () => {
+    const camZ = fitDist * st.zoom
+    const fillFrac = portrait ? 0.78 : 0.5
+    const d = 120 / (fillFrac * 2 * tan * Math.min(1, regionAspect))
+    return Math.min(d, camZ * 0.72)
+  }
+
   const v1 = new THREE.Vector3()
-  const v2 = new THREE.Vector3()
+  const vP = new THREE.Vector3()
+  const vLift = new THREE.Vector3()
+  const qParent = new THREE.Quaternion()
+  const qTarget = new THREE.Quaternion()
+  const qIdent = new THREE.Quaternion()
+  const zero = new THREE.Vector3()
 
   const apply = () => {
     if (!rig) return
@@ -208,17 +252,34 @@ export function createGameScene(opts: SceneOptions): GameScene {
     pivot.quaternion.copy(user).multiply(qA)
 
     // screen position: from the shelf rectangle to the centre
-    camera.position.set(0, 0, fitDist * st.zoom)
+    const camZ = fitDist * st.zoom
+    camera.position.set(0, 0, camZ)
     camera.lookAt(0, 0, 0)
-    v2.copy(st.start).lerp(new THREE.Vector3(0, 0, 0), f)
-    pivot.position.copy(v2)
+    pivot.position.copy(st.start).lerp(zero, f)
 
-    // discs: lift off the hub and tilt to show the read side
-    const l = easeInOut(clamp(st.lift, 0, 1))
-    for (const d of rig.discs) {
-      d.body.position.set(0, -l * 8, l * 34)
-      d.body.rotation.set(-l * 2.05, l * 0.25, 0)
-    }
+    // discs: reset every body to its hub, then move those that are out
+    pivot.updateMatrixWorld(true)
+    const dist = presentDist()
+    rig.discs.forEach((d, i) => {
+      const p = discP[i]
+      if (p <= 0.0001) {
+        d.body.position.set(0, 0, 0)
+        d.body.quaternion.identity()
+        return
+      }
+      // 1) straight up off the hub, clear of the grip petals
+      const e1 = easeOut(clamp(p / 0.3, 0, 1))
+      vLift.set(0, 0, 18 * e1)
+      // 2) then towards the viewer, turning to face them
+      const e2 = easeInOut(clamp((p - 0.2) / 0.8, 0, 1))
+      vP.set(0, 0, camZ - dist)
+      d.group.worldToLocal(vP)
+      d.group.getWorldQuaternion(qParent)
+      qTarget.copy(discUser).multiply(qDiscBase)
+      qTarget.premultiply(qParent.invert())
+      d.body.position.copy(vLift).lerp(vP, e2)
+      d.body.quaternion.copy(qIdent).slerp(qTarget, e2)
+    })
   }
 
   // ── loop ──
@@ -229,6 +290,7 @@ export function createGameScene(opts: SceneOptions): GameScene {
     lastT = now
     for (let i = tweens.length - 1; i >= 0; i--) {
       const tw = tweens[i]
+      if (!tw) continue
       const k = tw.dur <= 0 ? 1 : clamp((now - tw.t0) / tw.dur, 0, 1)
       tw.set(tw.from + (tw.to - tw.from) * tw.ease(k))
       if (k >= 1) {
@@ -237,8 +299,8 @@ export function createGameScene(opts: SceneOptions): GameScene {
       }
     }
     // inertia after a fling
-    if (!dragging && (Math.abs(vel.x) > 1e-4 || Math.abs(vel.y) > 1e-4)) {
-      rotateWorld(vel.x * dt * 60, vel.y * dt * 60)
+    if (!dragging && (vel.x !== 0 || vel.y !== 0)) {
+      turn(dragTarget, vel.x * dt * 60, vel.y * dt * 60)
       const damp = Math.exp(-dt * 5.5)
       vel.x *= damp
       vel.y *= damp
@@ -272,15 +334,17 @@ export function createGameScene(opts: SceneOptions): GameScene {
   const axisY = new THREE.Vector3(0, 1, 0)
   const axisX = new THREE.Vector3(1, 0, 0)
   const qd = new THREE.Quaternion()
-  function rotateWorld(dx: number, dy: number) {
-    // world-space turns: horizontal drags spin about the vertical axis,
-    // vertical drags tumble towards / away from the viewer — free in 360°
+  // world-space turns: horizontal drags spin about the vertical axis,
+  // vertical drags tumble towards / away from the viewer — free in 360°
+  function turn(target: "case" | "disc", dx: number, dy: number) {
+    const q = target === "disc" ? discUser : user
     qd.setFromAxisAngle(axisY, dx)
-    user.premultiply(qd)
+    q.premultiply(qd)
     qd.setFromAxisAngle(axisX, dy)
-    user.premultiply(qd)
-    user.normalize()
+    q.premultiply(qd)
+    q.normalize()
   }
+  const discInHand = () => active !== null && discP[active] > 0.55
 
   const ray = new THREE.Raycaster()
   const ndc = new THREE.Vector2()
@@ -291,7 +355,27 @@ export function createGameScene(opts: SceneOptions): GameScene {
   let pinch0 = 0
   let zoom0 = 1
   let lastMove = 0
+  let sentTurn = false
+  let sentDiscTurn = false
 
+  const pickDisc = (clientX: number, clientY: number) => {
+    if (!rig || !rig.discs.length) return -1
+    const r = canvas.getBoundingClientRect()
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1)
+    ray.setFromCamera(ndc, camera)
+    let best = -1
+    let bestD = Infinity
+    rig.discs.forEach((d, i) => {
+      const hit = ray.intersectObject(d.pick, false)[0]
+      if (hit && hit.distance < bestD) {
+        bestD = hit.distance
+        best = i
+      }
+    })
+    return best
+  }
+
+  let hoverDisc = false
   const onDown = (e: PointerEvent) => {
     if (!canInteract) return
     canvas.setPointerCapture(e.pointerId)
@@ -301,17 +385,28 @@ export function createGameScene(opts: SceneOptions): GameScene {
       moved = 0
       dragging = true
       vel.x = vel.y = 0
+      dragTarget = discInHand() ? "disc" : "case"
     } else if (pointers.size === 2) {
       const [a, b] = [...pointers.values()]
       pinch0 = Math.hypot(a.x - b.x, a.y - b.y)
       zoom0 = st.zoomTarget
     }
-    opts.onInteract?.()
     invalidate()
   }
   const onMove = (e: PointerEvent) => {
     const p = pointers.get(e.pointerId)
-    if (!p) return
+    if (!p) {
+      // hover feedback (mouse only): a disc under the pointer can be taken
+      if (canInteract && e.pointerType === "mouse") {
+        const over = pickDisc(e.clientX, e.clientY) >= 0
+        if (over !== hoverDisc) {
+          hoverDisc = over
+          canvas.dataset.hover = String(over)
+          emit({ type: "hover", disc: over })
+        }
+      }
+      return
+    }
     const dx = e.clientX - p.x
     const dy = e.clientY - p.y
     p.x = e.clientX
@@ -325,15 +420,24 @@ export function createGameScene(opts: SceneOptions): GameScene {
       return
     }
     moved += Math.abs(dx) + Math.abs(dy)
+    if (moved < 4) return
     // radians per pixel: about half a turn across the smaller side
-    const k = Math.PI / Math.min(size.w, size.h)
+    const k = Math.PI / Math.min(area.w, size.h)
     const rx = dx * k
     const ry = dy * k
-    rotateWorld(rx, ry)
+    turn(dragTarget, rx, ry)
+    if (dragTarget === "case" && !sentTurn && moved > 30) {
+      sentTurn = true
+      emit({ type: "turn" })
+    }
+    if (dragTarget === "disc" && !sentDiscTurn && moved > 30) {
+      sentDiscTurn = true
+      emit({ type: "disc-turn" })
+    }
     const now = performance.now()
     const dtm = Math.max(8, now - lastMove)
     lastMove = now
-    // keep a smoothed velocity (radians per 60 Hz frame) for the fling
+    // smoothed velocity (radians per 60 Hz frame) for the fling
     vel.x = vel.x * 0.6 + ((rx * 16) / dtm) * 0.4
     vel.y = vel.y * 0.6 + ((ry * 16) / dtm) * 0.4
     invalidate()
@@ -346,18 +450,23 @@ export function createGameScene(opts: SceneOptions): GameScene {
     if (performance.now() - lastMove > 90 || reducedMotion) vel.x = vel.y = 0
     vel.x = clamp(vel.x, -0.12, 0.12)
     vel.y = clamp(vel.y, -0.12, 0.12)
-    // a tap on a disc takes it out (or puts it back)
-    if (moved < 6 && performance.now() - downAt.t < 450 && rig && rig.discs.length) {
-      const r = canvas.getBoundingClientRect()
-      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
-      ray.setFromCamera(ndc, camera)
-      const hit = ray.intersectObjects(
-        rig.discs.map((d) => d.body),
-        true,
-      )
-      if (hit.length) toggleDiscs()
+    // a tap (not a drag) on a disc takes it out, or puts it back
+    if (moved < 8 && performance.now() - downAt.t < 500) {
+      vel.x = vel.y = 0
+      const i = pickDisc(e.clientX, e.clientY)
+      if (i >= 0) {
+        if (i === active) putBack()
+        else takeOut(i)
+      }
     }
     invalidate()
+  }
+  const onLeave = () => {
+    if (hoverDisc) {
+      hoverDisc = false
+      canvas.dataset.hover = "false"
+      emit({ type: "hover", disc: false })
+    }
   }
   const onWheel = (e: WheelEvent) => {
     if (!canInteract) return
@@ -366,37 +475,61 @@ export function createGameScene(opts: SceneOptions): GameScene {
     st.zoomTarget = clamp(st.zoomTarget * Math.exp(d * 0.0012), 0.55, 1.5)
     invalidate()
   }
-  const onDouble = () => {
-    if (canInteract) reset()
+  const onDouble = (e: MouseEvent) => {
+    e.preventDefault()
+    if (!canInteract) return
+    if (pickDisc(e.clientX, e.clientY) >= 0) return // double tap on a disc is two taps
+    reset()
   }
   canvas.addEventListener("pointerdown", onDown)
   canvas.addEventListener("pointermove", onMove)
   canvas.addEventListener("pointerup", onUp)
   canvas.addEventListener("pointercancel", onUp)
+  canvas.addEventListener("pointerleave", onLeave)
   canvas.addEventListener("wheel", onWheel, { passive: false })
   canvas.addEventListener("dblclick", onDouble)
   window.addEventListener("resize", resize)
 
-  function reset() {
-    const from = user.clone()
-    vel.x = vel.y = 0
-    st.zoomTarget = 1
-    void tween(0, 1, 700, easeInOut, (k) => {
-      user.copy(from).slerp(new THREE.Quaternion(), k)
-    })
+  const slerpTo = (q: THREE.Quaternion, target: THREE.Quaternion, dur: number, id: string) => {
+    const from = q.clone()
+    return tween(0, 1, dur, easeInOut, (k) => q.copy(from).slerp(target, k), id)
   }
 
-  let lifted = false
-  function toggleDiscs() {
-    if (!rig || !rig.discs.length) return false
-    lifted = !lifted
-    void tween(st.lift, lifted ? 1 : 0, 900, easeInOut, (v) => (st.lift = v))
-    return lifted
+  function reset() {
+    vel.x = vel.y = 0
+    st.zoomTarget = 1
+    if (discInHand()) void slerpTo(discUser, new THREE.Quaternion(), 600, "discUser")
+    else void slerpTo(user, new THREE.Quaternion(), 700, "user")
+  }
+
+  function takeOut(i: number) {
+    if (!canInteract || !rig || i < 0 || i >= rig.discs.length) return
+    if (active !== null && active !== i) {
+      const prev = active
+      void tween(discP[prev], 0, 850, (t) => t, (v) => (discP[prev] = v), `disc${prev}`)
+    }
+    active = i
+    discUser.identity()
+    vel.x = vel.y = 0
+    void tween(discP[i], 1, 1150, (t) => t, (v) => (discP[i] = v), `disc${i}`)
+    emit({ type: "disc", index: i })
+  }
+
+  function putBack() {
+    if (active === null) return Promise.resolve()
+    const i = active
+    active = null
+    vel.x = vel.y = 0
+    emit({ type: "disc", index: null })
+    // turn the disc back to the way it left before it flies home
+    const back = slerpTo(discUser, new THREE.Quaternion(), 420, "discUser")
+    const home = tween(discP[i], 0, 1000, (t) => t, (v) => (discP[i] = v), `disc${i}`)
+    return Promise.all([back, home]).then(() => undefined)
   }
 
   // ── assets ──
   const loader = new THREE.TextureLoader()
-  const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy())
+  const aniso = Math.min(tier === "high" ? 8 : 4, renderer.capabilities.getMaxAnisotropy())
   const ready = (async () => {
     const [wrap, ...labels] = await Promise.all([loadTexture(loader, opts.wrapUrl, aniso), ...opts.discUrls.map((u) => loadTexture(loader, u, aniso))])
     if (disposed) return
@@ -411,73 +544,70 @@ export function createGameScene(opts: SceneOptions): GameScene {
 
   const placeAtRect = (rect: DOMRect) => {
     if (!rig) return
-    const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
     const camZ = fitDist * st.zoom
-    // distance at which the case's height fills the rectangle's height
+    // distance at which the case's height fills the rectangle's height; at
+    // that depth one screen pixel is (2·dist·tan)/height world units
     const dist = (rig.spec.h * size.h) / (Math.max(20, rect.height) * 2 * tan)
-    const nx = ((rect.left + rect.width / 2) / size.w) * 2 - 1
-    const ny = -(((rect.top + rect.height / 2) / size.h) * 2 - 1)
-    st.start.set(nx * dist * tan * camera.aspect, ny * dist * tan, camZ - dist)
+    const px = (2 * dist * tan) / size.h
+    st.start.set((rect.left + rect.width / 2 - area.cx) * px, -(rect.top + rect.height / 2 - size.h / 2) * px, camZ - dist)
   }
 
   return {
     ready,
-    hasDiscs: opts.discUrls.length > 0,
+    discCount: opts.discUrls.length,
     flyIn: async (rect) => {
       await ready
       placeAtRect(rect)
       st.fly = 0
       apply()
       renderer.render(scene, camera)
-      await tween(0, 1, 820, (t) => t, (v) => (st.fly = v))
+      await tween(0, 1, 820, (t) => t, (v) => (st.fly = v), "fly")
     },
     open: async () => {
-      await tween(st.open, 1, 1250, (t) => t, (v) => (st.open = v))
+      await tween(st.open, 1, 1250, (t) => t, (v) => (st.open = v), "open")
       canInteract = true
     },
     close: async (rect, onFly) => {
-      canInteract = false
       dragging = false
       pointers = new Map()
       vel.x = vel.y = 0
-      const from = user.clone()
+      const homeDisc = active !== null ? putBack() : null
+      canInteract = false
       const z0 = st.zoomTarget
+      const from = user.clone()
       const jobs: Promise<void>[] = [
         tween(0, 1, 560, easeInOut, (k) => {
-          user.copy(from).slerp(new THREE.Quaternion(), k)
+          user.copy(from).slerp(qIdent, k)
           st.zoomTarget = st.zoom = z0 + (1 - z0) * k
-        }),
+        }, "user"),
       ]
-      const hadDisc = st.lift > 0
-      if (hadDisc) {
-        lifted = false
-        jobs.push(tween(st.lift, 0, 520, easeInOut, (v) => (st.lift = v)))
-      }
-      // the lid starts closing while the case squares up (after the disc is home)
+      if (homeDisc) jobs.push(homeDisc)
+      // the lid starts closing once the disc is home and the case squares up
       jobs.push(
-        new Promise<void>((r) => setTimeout(r, hadDisc ? 420 : 160)).then(() =>
-          tween(st.open, 0, 900, (t) => t, (v) => (st.open = v)),
-        ),
+        (homeDisc ?? Promise.resolve())
+          .then(() => new Promise<void>((r) => setTimeout(r, homeDisc ? 60 : 160)))
+          .then(() => tween(st.open, 0, 900, (t) => t, (v) => (st.open = v), "open")),
       )
       await Promise.all(jobs)
       onFly?.()
       if (rect) {
         placeAtRect(rect)
-        await tween(1, 0, 680, (t) => t, (v) => (st.fly = v))
+        await tween(1, 0, 680, (t) => t, (v) => (st.fly = v), "fly")
       }
     },
-    toggleDiscs,
+    takeOut,
+    putBack: () => void putBack(),
     reset,
     rotateBy: (yaw, pitch) => {
       if (!canInteract) return
-      const from = user.clone()
-      const q = new THREE.Quaternion()
-      const target = from.clone()
-      q.setFromAxisAngle(axisY, yaw)
-      target.premultiply(q)
-      q.setFromAxisAngle(axisX, pitch)
-      target.premultiply(q)
-      void tween(0, 1, 380, easeOut, (k) => user.copy(from).slerp(target, k))
+      const q = discInHand() ? discUser : user
+      const target = q.clone()
+      qd.setFromAxisAngle(axisY, yaw)
+      target.premultiply(qd)
+      qd.setFromAxisAngle(axisX, pitch)
+      target.premultiply(qd)
+      const from = q.clone()
+      void tween(0, 1, 380, easeOut, (k) => q.copy(from).slerp(target, k), discInHand() ? "discUser" : "user")
     },
     zoomBy: (f) => {
       if (!canInteract) return
@@ -492,6 +622,7 @@ export function createGameScene(opts: SceneOptions): GameScene {
       canvas.removeEventListener("pointermove", onMove)
       canvas.removeEventListener("pointerup", onUp)
       canvas.removeEventListener("pointercancel", onUp)
+      canvas.removeEventListener("pointerleave", onLeave)
       canvas.removeEventListener("wheel", onWheel)
       canvas.removeEventListener("dblclick", onDouble)
       window.removeEventListener("resize", resize)
@@ -504,6 +635,8 @@ export function createGameScene(opts: SceneOptions): GameScene {
         else mat?.dispose()
       })
       textures.forEach((t) => t.dispose())
+      disposeSleeveTexture()
+      key.shadow.map?.dispose()
       envTex.dispose()
       pmrem.dispose()
       renderer.dispose()
@@ -512,7 +645,7 @@ export function createGameScene(opts: SceneOptions): GameScene {
   }
 }
 
-// WebGL available and not software-rendered at a crawl?
+// WebGL available?
 export function webglSupport(): boolean {
   try {
     const c = document.createElement("canvas")

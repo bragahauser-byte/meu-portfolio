@@ -42,6 +42,25 @@ export type CaseSpec = {
   tray: "ring" | "dish" | "flat"
   label: string // human name for the platform
   short: string
+  edge: EdgeSpec
+}
+
+// How each family of case is moulded at its edges (mm).
+//  · Amaray DVD (PS2, Xbox 360): tighter corners, a flat spine with hinge
+//    grooves, a raised welded frame around the clear sleeve, snap nubs on the
+//    opening edge.
+//  · Blu-ray Elite (PS4, PS5): rounder corners, softly rounded outer edges and
+//    spine, a thin sleeve frame and a recessed thumb grip on the opening edge.
+export type EdgeSpec = {
+  corner: number // outer corner radius on the opening side
+  hingeCorner: number // corner radius on the spine side
+  bevel: number // rounding of the outer edges
+  lipW: number // width of the raised frame around the sleeve
+  lipH: number // its height above the face
+  spineRadius: number // rounding of the spine's outer edges
+  thumbNotch: boolean
+  nubs: boolean
+  seamGap: number // visible gap where the two halves meet when closed
 }
 
 export const DISC_R = 60
@@ -117,6 +136,7 @@ export const cases: Record<PlatformId, CaseSpec> = {
     tray: "flat",
     label: "PlayStation 2",
     short: "PS2",
+    edge: { corner: 2.2, hingeCorner: 0.8, bevel: 0.35, lipW: 1.7, lipH: 0.55, spineRadius: 0.7, thumbNotch: false, nubs: true, seamGap: 0.5 },
   },
   ps4: {
     w: 135,
@@ -132,12 +152,13 @@ export const cases: Record<PlatformId, CaseSpec> = {
     tray: "ring",
     label: "PlayStation 4",
     short: "PS4",
+    edge: { corner: 5, hingeCorner: 1.2, bevel: 0.9, lipW: 1.1, lipH: 0.32, spineRadius: 2.6, thumbNotch: true, nubs: false, seamGap: 0.35 },
   },
   ps5: {
     w: 135,
     h: 170,
     d: 14,
-    plastic: [0.05, 0.33, 0.95],
+    plastic: [0.03, 0.29, 0.9],
     opacity: 0.5,
     inner: [0.16, 0.42, 0.96],
     wall: 1.4,
@@ -147,6 +168,7 @@ export const cases: Record<PlatformId, CaseSpec> = {
     tray: "ring",
     label: "PlayStation 5",
     short: "PS5",
+    edge: { corner: 5, hingeCorner: 1.2, bevel: 0.9, lipW: 1.1, lipH: 0.32, spineRadius: 2.6, thumbNotch: true, nubs: false, seamGap: 0.35 },
   },
   x360: {
     w: 135,
@@ -162,6 +184,7 @@ export const cases: Record<PlatformId, CaseSpec> = {
     tray: "dish",
     label: "Xbox 360",
     short: "Xbox 360",
+    edge: { corner: 3.4, hingeCorner: 1, bevel: 0.6, lipW: 2.1, lipH: 0.6, spineRadius: 1.5, thumbNotch: false, nubs: true, seamGap: 0.6 },
   },
 }
 

@@ -322,6 +322,31 @@ function usePrefersReducedMotion() {
 // rectangle the image is drawn into (cqw/cqh), and the video is placed in %
 // of that rectangle: it stays locked to the screen at any size and is never
 // stretched, because the cropped screen keeps the recording's proportions.
+// Only one recording plays at a time: the most visible one. Every
+// MockupVideo reports how much of it is on screen; the bus elects a leader.
+const videoBus = {
+  ratios: new Map<number, number>(),
+  leader: -1,
+  subs: new Set<() => void>(),
+  next: 1,
+  set(id: number, r: number) {
+    if (r > 0) this.ratios.set(id, r)
+    else this.ratios.delete(id)
+    let best = -1
+    let bestR = 0
+    this.ratios.forEach((v, k) => {
+      if (v > bestR + 0.001) {
+        best = k
+        bestR = v
+      }
+    })
+    if (best !== this.leader) {
+      this.leader = best
+      this.subs.forEach((f) => f())
+    }
+  },
+}
+
 function MockupVideo({
   video,
   fit,
@@ -332,14 +357,83 @@ function MockupVideo({
   playing?: boolean
 }) {
   const ref = useRef<HTMLVideoElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
   const reduceMotion = usePrefersReducedMotion()
+  // near: within about a screen of the viewport → attach the source and fetch
+  // metadata only. inView: at least a quarter on screen → play. Leaving pauses.
+  // Nothing is downloaded for recordings the visitor never gets close to.
+  const [near, setNear] = useState(false)
+  const [inView, setInView] = useState(false)
+  const [ratio, setRatio] = useState(0)
+  const idRef = useRef(0)
+  if (!idRef.current) idRef.current = videoBus.next++
+  const [leader, setLeader] = useState(videoBus.leader)
+  useEffect(() => {
+    const on = () => setLeader(videoBus.leader)
+    videoBus.subs.add(on)
+    return () => {
+      videoBus.subs.delete(on)
+      videoBus.set(idRef.current, 0)
+    }
+  }, [])
 
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setNear(true)
+      setInView(true)
+      return
+    }
+    const nearIO = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setNear(true)
+      },
+      { rootMargin: "35% 25% 35% 25%" },
+    )
+    const viewIO = new IntersectionObserver(
+      ([e]) => {
+        setInView(e.isIntersecting && e.intersectionRatio >= 0.25)
+        setRatio(e.isIntersecting ? e.intersectionRatio : 0)
+      },
+      { threshold: [0, 0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 1] },
+    )
+    nearIO.observe(el)
+    viewIO.observe(el)
+    return () => {
+      nearIO.disconnect()
+      viewIO.disconnect()
+    }
+  }, [])
+
+  // the source is attached only once the recording is close AND its slide is
+  // the active one (stacked, faded-out slides are "in view" too); after that
+  // it stays attached so scrolling back doesn't refetch
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (near && playing) setArmed(true)
+  }, [near, playing])
+  useEffect(() => {
+    videoBus.set(idRef.current, playing && armed && inView ? ratio : 0)
+  }, [playing, armed, inView, ratio])
+  const shouldPlay = playing && inView && armed && !reduceMotion && leader === idRef.current
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (playing && !reduceMotion) el.play().catch(() => undefined)
-    else el.pause()
-  }, [playing, reduceMotion])
+    if (shouldPlay) el.play().catch(() => undefined)
+    else if (!el.paused) el.pause()
+  }, [shouldPlay])
+
+  // pause while the tab is hidden
+  useEffect(() => {
+    const on = () => {
+      const el = ref.current
+      if (!el) return
+      if (document.hidden) el.pause()
+      else if (shouldPlay) el.play().catch(() => undefined)
+    }
+    document.addEventListener("visibilitychange", on)
+    return () => document.removeEventListener("visibilitychange", on)
+  }, [shouldPlay])
 
   const [l, t, w, h] = video.rect
   const [cx, cy, cw, ch] = video.crop
@@ -352,6 +446,7 @@ function MockupVideo({
 
   return (
     <div
+      ref={boxRef}
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden"
       style={{ containerType: "size" }}
@@ -379,13 +474,13 @@ function MockupVideo({
         >
           <video
             ref={ref}
-            src={video.src}
+            src={armed ? video.src : undefined}
             muted
             loop
             playsInline
-            autoPlay={playing && !reduceMotion}
-            // recordings only download once their slide is actually showing
-            preload={playing ? "auto" : "none"}
+            disablePictureInPicture
+            // no autoplay attribute: playback is driven by visibility (above)
+            preload={armed ? (shouldPlay ? "auto" : "metadata") : "none"}
             className="absolute max-w-none"
             style={{
               left: `${(-cx / cw) * 100}%`,

@@ -190,6 +190,8 @@ export default function Carousel3D({
   const onActivateRef = useRef(onActivate)
   onActiveChangeRef.current = onActiveChange
   onActivateRef.current = onActivate
+  const kindRef = useRef(kind)
+  kindRef.current = kind
   const pausedRef = useRef(paused)
   pausedRef.current = paused
   const hiddenRef = useRef(hiddenIndex)
@@ -205,6 +207,7 @@ export default function Carousel3D({
     tiltY: 0,
     pointerX: 0,
     pointerY: 0,
+    pendingOpen: null as number | null, // games: clicked a case further down the row → open it once it arrives
   })
 
   const [active, setActive] = useState(0)
@@ -216,6 +219,7 @@ export default function Carousel3D({
     let last = performance.now()
 
     let settled = 0 // frames in a row with nothing moving
+    s.pendingOpen = null
     let lastHidden: number | null | undefined
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
@@ -242,7 +246,7 @@ export default function Carousel3D({
         Math.abs(s.pointerY * -1.6 - s.tiltX) > 0.002 ||
         Math.abs(s.pointerX * 2.2 - s.tiltY) > 0.002 ||
         lastHidden !== hiddenRef.current
-      settled = moving ? 0 : settled + 1
+      settled = moving || s.pendingOpen !== null ? 0 : settled + 1
       if (settled > 2) return
       lastHidden = hiddenRef.current
 
@@ -264,6 +268,11 @@ export default function Carousel3D({
       }
 
       const idx = ((Math.round(s.pos) % n) + n) % n
+      if (s.pendingOpen !== null && idx === s.pendingOpen && Math.abs(s.target - s.pos) < 0.04) {
+        const i = s.pendingOpen
+        s.pendingOpen = null
+        onActivateRef.current(i)
+      }
       if (idx !== s.active) {
         s.active = idx
         setActive(idx)
@@ -283,6 +292,7 @@ export default function Carousel3D({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       if (pausedRef.current) return
+      s.pendingOpen = null
       const d = (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) + (e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX)
       const delta = clamp(d * 0.0085, -0.9, 0.9) // one wheel notch ≈ one item
       s.target += delta
@@ -311,6 +321,7 @@ export default function Carousel3D({
     let lastMove = { x: 0, t: 0, v: 0 }
     const onDown = (e: PointerEvent) => {
       if (pausedRef.current) return
+      s.pendingOpen = null
       drag = { x: e.clientX, y: e.clientY, t: s.target, moved: false, id: e.pointerId }
       lastMove = { x: e.clientX, t: performance.now(), v: 0 }
     }
@@ -351,6 +362,7 @@ export default function Carousel3D({
           else {
             s.target = Math.round(s.pos + rel)
             s.lastInput = 0
+            if (kindRef.current === "games") s.pendingOpen = i
           }
         }
       }

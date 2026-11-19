@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js"
 import { cases, discs, DISC_R, HOLE_R, SPINE_U0, SPINE_U1 } from "./platforms"
-import type { CaseSpec, DiscSpec, PlatformId } from "./platforms"
+import type { CaseSpec, DiscSpec, EdgeSpec, PlatformId } from "./platforms"
 
 // ── Models ───────────────────────────────────────────────────────────────────
 // Everything is built in millimetres, from primitives, so one set of builders
@@ -32,6 +32,7 @@ export type CaseRig = {
 export type DiscRig = {
   group: THREE.Group // positioned on its hub
   body: THREE.Group // lifted / tilted when the visitor takes it out
+  pick: THREE.Mesh // invisible hit area
   rest: THREE.Vector3
   side: "back" | "lid"
 }
@@ -40,7 +41,8 @@ type Mats = {
   shell: THREE.Material // walls, rims, clips: the plastic itself
   panel: THREE.Material // the big faces: paper behind plastic, or black plastic
   detail: THREE.Material // hub, tray ring
-  insert: THREE.Material // printed cover under the clear sleeve
+  insert: THREE.Material // printed paper
+  film: THREE.Material // clear sleeve over the paper
   paperBack: THREE.Material
 }
 
@@ -362,74 +364,261 @@ export function buildDisc(spec: DiscSpec, label: THREE.Texture | null, keyDir: T
   hole.position.z = T / 2
   body.add(hole)
 
-  return { group, body }
+  // hit area for taps: the whole disc (hole included), a little larger than
+  // the disc so it is easy to catch with a finger; never drawn
+  const pick = new THREE.Mesh(new THREE.CircleGeometry(DISC_R + 4, 48), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, transparent: true, opacity: 0, side: THREE.DoubleSide }))
+  pick.position.z = T / 2
+  pick.name = "pick"
+  body.add(pick)
+
+  return { group, body, pick }
 }
 
 // ── Case ─────────────────────────────────────────────────────────────────────
+// Three layers on every outer face, like the real thing:
+//  A. the moulded plastic shell (edges, corners, hinges, catches),
+//  B. the printed paper insert — matte, it never shines by itself,
+//  C. the clear sleeve over it — a separate sheet 0.35 mm above the paper
+//     that only adds reflections (additive, no colour of its own) and is
+//     very slightly wavy, so highlights ripple a little as the case turns.
+
+// Gentle waviness for the clear sleeve (roughness + bump), generated once.
+let filmTex: THREE.CanvasTexture | null = null
+export function sleeveTexture() {
+  if (filmTex) return filmTex
+  const S = 256
+  const c = document.createElement("canvas")
+  c.width = c.height = S
+  const x = c.getContext("2d")!
+  const img = x.createImageData(S, S)
+  for (let j = 0; j < S; j++)
+    for (let i = 0; i < S; i++) {
+      const u = i / S
+      const v = j / S
+      const w =
+        0.5 +
+        0.22 * Math.sin((u * 2 + v * 1) * Math.PI * 2) +
+        0.16 * Math.sin((v * 3 - u * 1) * Math.PI * 2 + 1.3) +
+        0.08 * Math.sin((u * 7 + v * 5) * Math.PI * 2 + 0.4) +
+        (Math.random() - 0.5) * 0.04
+      const g = Math.round(Math.min(1, Math.max(0, w)) * 255)
+      const k = (j * S + i) * 4
+      img.data[k] = img.data[k + 1] = img.data[k + 2] = g
+      img.data[k + 3] = 255
+    }
+  x.putImageData(img, 0, 0)
+  filmTex = new THREE.CanvasTexture(c)
+  filmTex.wrapS = filmTex.wrapT = THREE.RepeatWrapping
+  filmTex.repeat.set(1.5, 2)
+  return filmTex
+}
+export function disposeSleeveTexture() {
+  filmTex?.dispose()
+  filmTex = null
+}
 
 function materials(spec: CaseSpec, wrap: THREE.Texture): Mats {
   const translucent = spec.opacity < 1
   const shell = new THREE.MeshPhysicalMaterial({
     color: srgb(spec.plastic),
-    roughness: translucent ? 0.18 : 0.42,
+    roughness: translucent ? 0.2 : 0.38,
     metalness: 0,
-    clearcoat: translucent ? 0.8 : 0.25,
-    clearcoatRoughness: 0.18,
+    clearcoat: translucent ? 0.6 : 0.3,
+    clearcoatRoughness: 0.2,
     transparent: translucent,
-    opacity: spec.opacity,
+    opacity: translucent ? Math.min(0.85, spec.opacity + 0.18) : 1,
     side: THREE.DoubleSide,
   })
   const panel = new THREE.MeshPhysicalMaterial({
     color: srgb(spec.inner),
-    roughness: translucent ? 0.3 : 0.55,
+    roughness: translucent ? 0.3 : 0.62,
     metalness: 0,
-    clearcoat: translucent ? 0.35 : 0.12,
-    clearcoatRoughness: 0.2,
+    clearcoat: translucent ? 0.35 : 0.08,
+    clearcoatRoughness: 0.25,
   })
+  const lift = (c: number[]) => c.map((v) => Math.min(1, v)) as [number, number, number]
   const detail = new THREE.MeshPhysicalMaterial({
-    color: srgb(translucent ? spec.plastic.map((c) => Math.min(1, c * 0.85 + 0.04)) as [number, number, number] : spec.inner),
-    roughness: translucent ? 0.16 : 0.5,
+    color: srgb(translucent ? lift(spec.plastic.map((c) => c * 0.85 + 0.04)) : lift(spec.inner.map((c) => c * 1.25))),
+    roughness: translucent ? 0.16 : 0.45,
     metalness: 0,
-    clearcoat: translucent ? 0.9 : 0.2,
+    clearcoat: translucent ? 0.9 : 0.25,
     transparent: translucent,
     opacity: translucent ? Math.min(0.92, spec.opacity + 0.28) : 1,
   })
-  const insert = new THREE.MeshPhysicalMaterial({
-    map: wrap,
-    roughness: 0.6,
+  // B. paper: matte print
+  const insert = new THREE.MeshStandardMaterial({ map: wrap, roughness: 0.86, metalness: 0 })
+  // C. clear sleeve: reflections only
+  const wave = sleeveTexture()
+  const film = new THREE.MeshPhysicalMaterial({
+    color: 0x000000,
+    roughness: 0.26,
+    roughnessMap: wave,
+    bumpMap: wave,
+    bumpScale: 0.5,
     metalness: 0,
-    clearcoat: 0.55, // the clear outer sleeve over the printed insert
-    clearcoatRoughness: 0.12,
+    ior: 1.5,
+    specularIntensity: 1,
+    envMapIntensity: 4.2,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
   })
   const paperBack = new THREE.MeshStandardMaterial({ color: srgb(spec.inner), roughness: 0.8 })
-  return { shell, panel, detail, insert, paperBack }
+  return { shell, panel, detail, insert, film, paperBack }
+}
+
+// Outline of one half, seen from outside: rounder corners on the opening
+// side, tight ones at the spine; Blu-ray halves get the thumb recess in the
+// middle of the opening edge.
+function halfShape(W: number, H: number, rOpen: number, rHinge: number, inset: number, notch: boolean) {
+  const s = new THREE.Shape()
+  const x0 = inset
+  const x1 = W - inset
+  const y0 = -H / 2 + inset
+  const y1 = H / 2 - inset
+  const ro = Math.max(0.1, rOpen - inset)
+  const rh = Math.max(0.1, rHinge - inset)
+  s.moveTo(x0 + rh, y0)
+  s.lineTo(x1 - ro, y0)
+  s.quadraticCurveTo(x1, y0, x1, y0 + ro)
+  if (notch) {
+    const n = 11 // half length of the recess
+    const d = 1.1 // depth
+    s.lineTo(x1, -n - 3)
+    s.bezierCurveTo(x1, -n - 1, x1 - d, -n, x1 - d, -n + 2)
+    s.lineTo(x1 - d, n - 2)
+    s.bezierCurveTo(x1 - d, n, x1, n + 1, x1, n + 3)
+  }
+  s.lineTo(x1, y1 - ro)
+  s.quadraticCurveTo(x1, y1, x1 - ro, y1)
+  s.lineTo(x0 + rh, y1)
+  s.quadraticCurveTo(x0, y1, x0, y1 - rh)
+  s.lineTo(x0, y0 + rh)
+  s.quadraticCurveTo(x0, y0, x0 + rh, y0)
+  return s
+}
+
+function extrude(shape: THREE.Shape, depth: number, bevel: number, mat: THREE.Material) {
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: Math.max(0.05, depth - bevel * 2),
+    bevelEnabled: bevel > 0,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 3,
+    curveSegments: 10,
+  })
+  g.translate(0, 0, bevel)
+  const m = new THREE.Mesh(g, mat)
+  m.castShadow = true
+  m.receiveShadow = true
+  return m
+}
+
+// The raised frame around the sleeve on an outer face: top, bottom and the
+// opening edge (the sleeve continues round the spine, so no frame there).
+// Built in the XY plane rising towards +Z from z = 0.
+function sleeveFrame(W: number, H: number, e: EdgeSpec, mat: THREE.Material) {
+  const s = new THREE.Shape()
+  const r = Math.max(0.4, e.corner - 0.6)
+  const lw = e.lipW
+  const top = H / 2 - 0.4
+  const right = W - 0.4
+  s.moveTo(0, top)
+  s.lineTo(right - r, top)
+  s.quadraticCurveTo(right, top, right, top - r)
+  s.lineTo(right, -top + r)
+  s.quadraticCurveTo(right, -top, right - r, -top)
+  s.lineTo(0, -top)
+  s.lineTo(0, -top + lw)
+  s.lineTo(right - lw - r * 0.5, -top + lw)
+  s.quadraticCurveTo(right - lw, -top + lw, right - lw, -top + lw + r * 0.5)
+  s.lineTo(right - lw, top - lw - r * 0.5)
+  s.quadraticCurveTo(right - lw, top - lw, right - lw - r * 0.5, top - lw)
+  s.lineTo(0, top - lw)
+  s.lineTo(0, top)
+  const g = new THREE.ExtrudeGeometry(s, { depth: e.lipH, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 2, curveSegments: 8 })
+  const m = new THREE.Mesh(g, mat)
+  m.castShadow = true
+  m.receiveShadow = true
+  return m
+}
+
+// Paper + clear sleeve for one outer face, facing +Z from z = 0 (the face of
+// the plastic); callers orient it.
+function coverLayers(w: number, h: number, u0: number, u1: number, M: Mats, gap: number) {
+  const g = new THREE.Group()
+  const paper = insertPlane(w, h, u0, u1, M.insert)
+  paper.position.z = 0.05
+  g.add(paper)
+  const film = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.6, h + 0.6), M.film)
+  film.position.z = 0.05 + gap
+  film.renderOrder = 3
+  g.add(film)
+  return g
 }
 
 export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (THREE.Texture | null)[], keyDir: THREE.Vector3): CaseRig {
   const spec = cases[platform]
   const dspec = discs[platform]
+  const e = spec.edge
   const M = materials(spec, wrap)
   const { h: H, d: D } = spec
   const t = spec.wall
   const W = spec.w - t // each half, the spine takes up the rest
-  const hw = (D - 2 * t) / 2 - 0.3 // wall height of each half
-  const margin = 2.2 // plastic visible around the insert
+  const hw = (D - 2 * t - e.seamGap) / 2 // wall height of each half
   const root = new THREE.Group()
+  const SLEEVE_GAP = 0.35
+
+  // A half, built in its own frame: outer face at z = 0 (facing −Z),
+  // panel z 0…t, walls rising to t + hw. Used as is for the tray side and
+  // mirrored in depth for the cover side.
+  const buildHalf = (isLid: boolean) => {
+    const g = new THREE.Group()
+    const panel = extrude(halfShape(W, H, e.corner, e.hingeCorner, 0, e.thumbNotch), t, Math.min(e.bevel, t / 2 - 0.05), M.panel)
+    g.add(panel)
+    // walls: the outline minus its inside, so corners have real thickness
+    const ring = halfShape(W, H, e.corner, e.hingeCorner, 0, e.thumbNotch)
+    ring.holes.push(halfShape(W, H, Math.max(0.6, e.corner - spec.wall), Math.max(0.3, e.hingeCorner - 0.4), spec.wall, false))
+    const walls = extrude(ring, hw + 0.6, Math.min(e.bevel * 0.6, 0.5), M.shell)
+    walls.position.z = t - 0.6
+    g.add(walls)
+    if (e.nubs) {
+      // Amaray snap nubs on the inside of the opening wall
+      for (const y of [H * 0.3, -H * 0.3]) {
+        const nub = new THREE.Mesh(new THREE.SphereGeometry(isLid ? 1.0 : 0.8, 16, 10), M.shell)
+        nub.position.set(W - spec.wall - 0.5, y, t + hw - 1.2)
+        nub.scale.set(0.7, 2.4, 1)
+        g.add(nub)
+      }
+    } else {
+      // Blu-ray: moulded catches on the top and bottom walls near the opening edge
+      for (const s of [1, -1]) {
+        const c = box(7, 1.4, 1.6, 0.4, M.shell)
+        c.position.set(W - 12, s * (H / 2 - spec.wall - 0.6), t + hw - 0.9)
+        g.add(c)
+      }
+    }
+    return g
+  }
 
   // ── back half (tray side) ──
   const back = new THREE.Group()
   root.add(back)
+  back.add(buildHalf(false))
   {
-    const p = box(W, H, t, 0.5, M.panel)
-    p.position.set(W / 2, 0, t / 2)
-    back.add(p)
-    addWalls(back, W, H, t, hw, M.shell, 1)
-    // outside: printed back cover (u 0 → spine)
-    const ins = insertPlane(W - margin, H - margin * 2, 0, SPINE_U0, M.insert)
-    ins.rotation.y = Math.PI
-    ins.position.set(W / 2 - margin / 2, 0, -0.06)
-    back.add(ins)
-    addClosure(back, W, H, t, hw, M.shell)
+    // outside face: frame + paper + sleeve, facing −Z (rotation only, the
+    // u range runs from the far edge to the spine so the print reads right)
+    const out = new THREE.Group()
+    out.rotation.y = Math.PI
+    out.position.x = W
+    back.add(out)
+    const frame = sleeveFrame(W, H, e, M.shell)
+    frame.scale.x = -1 // frame's open side must stay at the spine (x = W in this flipped frame)
+    frame.position.x = W
+    out.add(frame)
+    const layers = coverLayers(W - e.lipW - 0.8, H - 2 * e.lipW - 0.8, 0, SPINE_U0, M, SLEEVE_GAP)
+    layers.position.set(W - (W - e.lipW) / 2 + 0.2, 0, 0)
+    out.add(layers)
   }
 
   // ── spine ──
@@ -437,25 +626,33 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
   spine.position.set(0, 0, t / 2)
   root.add(spine)
   {
-    const p = box(t, H, D, 0.5, M.panel)
-    p.position.set(-t / 2, 0, D / 2 - t / 2)
+    const round = e.spineRadius > 2 // Blu-ray: thicker, softly rounded spine
+    const st = t + (round ? 0.5 : 0)
+    const p = box(st, H - 0.2, D, Math.min(e.spineRadius, st / 2 - 0.01), M.panel)
+    p.position.set(-st / 2, 0, D / 2 - t / 2)
     spine.add(p)
-    const ins = insertPlane(D - 0.6, H - margin * 2, SPINE_U0, SPINE_U1, M.insert)
-    ins.rotation.y = -Math.PI / 2
-    ins.position.set(-t - 0.06, 0, D / 2 - t / 2)
-    spine.add(ins)
-    // top / bottom caps of the spine
+    const layers = coverLayers(D - 1.2, H - 2 * e.lipW - 0.8, SPINE_U0, SPINE_U1, M, SLEEVE_GAP * 0.6)
+    layers.rotation.y = -Math.PI / 2
+    layers.position.set(-st, 0, D / 2 - t / 2)
+    spine.add(layers)
+    // the sleeve frame continues across the spine at top and bottom
     for (const s of [1, -1]) {
-      const cap = box(t + 0.2, t, D, 0.4, M.shell)
-      cap.position.set(-t / 2, s * (H / 2 - t / 2), D / 2 - t / 2)
+      const cap = box(e.lipH + 0.3, e.lipW, D - 0.4, 0.15, M.shell)
+      cap.position.set(-st - e.lipH / 2 + 0.1, s * (H / 2 - 0.4 - e.lipW / 2), D / 2 - t / 2)
       spine.add(cap)
     }
-    // living hinges: rounded knuckles along each fold line
+    // living hinges: rounded knuckles along each fold line; Amaray spines
+    // also show a groove next to each hinge
     for (const z of [0, D - t]) {
-      const k = new THREE.Mesh(new THREE.CylinderGeometry(t * 0.62, t * 0.62, H - 1, 20), M.shell)
+      const k = new THREE.Mesh(new THREE.CylinderGeometry(t * 0.62, t * 0.62, H - 1.5, 20), M.shell)
       k.position.set(0, 0, z)
       k.castShadow = true
       spine.add(k)
+      if (!round) {
+        const groove = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, H - 6, 8), M.detail)
+        groove.position.set(-t * 0.5, 0, z === 0 ? 1.6 : D - t - 1.6)
+        spine.add(groove)
+      }
     }
     // the two moulded dimples on the inside of Blu-ray spines
     if (spec.hub === "petal") {
@@ -473,33 +670,32 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
   lid.position.set(0, 0, D - t)
   spine.add(lid)
   {
-    const inner = new THREE.Group() // lid contents built facing −Z (towards the tray)
+    // mirror in depth: (x, y, z) → (x, y, t/2 − z), so the half's outer face
+    // lands on the lid's +Z side (the front cover) and its walls point inward
+    const inner = new THREE.Group()
     inner.rotation.y = Math.PI
-    inner.scale.x = -1 // keep +x running from the hinge to the opening edge
+    inner.scale.x = -1
+    inner.position.z = t / 2
     lid.add(inner)
-    const p = box(W, H, t, 0.5, M.panel)
-    p.position.set(W / 2, 0, 0)
-    inner.add(p)
-    const wallsG = new THREE.Group()
-    wallsG.position.z = -t / 2 // addWalls starts at z = t: the panel's inner face here is t/2
-    addWalls(wallsG, W, H, t, hw, M.shell, 1)
-    inner.add(wallsG)
+    inner.add(buildHalf(true))
     // booklet clips near the opening edge (they hold the manual)
     for (const s of [1, -1]) {
       const c = clip(M.detail, s)
-      c.position.set(W - 4, s * (H / 2 - 16), t / 2)
+      c.position.set(W - 4, s * (H / 2 - 16), t)
       inner.add(c)
       if (spec.hub === "petal") {
-        // long moulded ribs along the top and bottom
         const rib = box(W - 40, 1.2, 1.2, 0.4, M.detail)
-        rib.position.set(W / 2 - 4, s * (H / 2 - 9), t / 2 + 0.6)
+        rib.position.set(W / 2 - 4, s * (H / 2 - 9), t + 0.6)
         inner.add(rib)
       }
     }
-    // outside: printed front cover
-    const ins = insertPlane(W - margin, H - margin * 2, SPINE_U1, 1, M.insert)
-    ins.position.set(W / 2 - margin / 2, 0, t / 2 + 0.06)
-    lid.add(ins)
+    // outside (not mirrored, so the print reads correctly): frame + paper + sleeve
+    const frame = sleeveFrame(W, H, e, M.shell)
+    frame.position.z = t / 2
+    lid.add(frame)
+    const layers = coverLayers(W - e.lipW - 0.8, H - 2 * e.lipW - 0.8, SPINE_U1, 1, M, SLEEVE_GAP)
+    layers.position.set((W - e.lipW) / 2 - 0.2, 0, t / 2)
+    lid.add(layers)
   }
 
   // ── tray: hub, ring, platform extras ──
@@ -549,7 +745,6 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
     const floor = box(fw - 4, fh - 4, 0.6, 0.3, M.detail)
     floor.position.z = 0.3
     mc.add(floor)
-    // finger notch tabs
     for (const s of [1, -1]) {
       const tab = box(8, 3, 3.6, 0.6, M.detail)
       tab.position.set(s * (fw / 2 - 6), fh / 2 + 1.6, 1.8)
@@ -557,8 +752,7 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
     }
   }
 
-  const twoDiscs = labels.length >= 2
-  if (twoDiscs) {
+  if (labels.length >= 2) {
     // second tray on the inside of the front cover
     const lidTray = new THREE.Group()
     lidTray.rotation.y = Math.PI
@@ -569,7 +763,7 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
 
   labels.forEach((label, i) => {
     const onLid = i === 1
-    const { group, body } = buildDisc(dspec, label, keyDir, onLid ? 0.14 : -0.06)
+    const { group, body, pick } = buildDisc(dspec, label, keyDir, onLid ? 0.14 : -0.06)
     if (!onLid) {
       group.position.set(backCx, spec.discY, discZ)
       back.add(group)
@@ -581,7 +775,7 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
       group.position.set(-backCx, spec.discY, t / 2 + 2.45)
       holder.add(group)
     }
-    discRigs.push({ group, body, rest: group.position.clone(), side: onLid ? "lid" : "back" })
+    discRigs.push({ group, body, pick, rest: group.position.clone(), side: onLid ? "lid" : "back" })
   })
 
   const setOpen = (k: number) => {
@@ -601,27 +795,5 @@ export function buildCase(platform: PlatformId, wrap: THREE.Texture, labels: (TH
     frontCenter: new THREE.Vector3(W / 2 - t / 2, 0, D),
     openCenter: new THREE.Vector3(-D / 2, 0, t / 2 + 2),
     setOpen,
-  }
-}
-
-// Walls of one half: top, bottom and the opening edge; the hinge side is
-// closed by the spine.
-function addWalls(g: THREE.Group, W: number, H: number, t: number, hw: number, mat: THREE.Material, dir: number) {
-  for (const s of [1, -1]) {
-    const w = box(W, t, hw, 0.45, mat)
-    w.position.set(W / 2, s * (H / 2 - t / 2), (t + hw / 2) * dir)
-    g.add(w)
-  }
-  const e = box(t, H, hw, 0.45, mat)
-  e.position.set(W - t / 2, 0, (t + hw / 2) * dir)
-  g.add(e)
-}
-
-// Snap-fit: small catches on the opening edge that click the lid shut.
-function addClosure(g: THREE.Group, W: number, H: number, t: number, hw: number, mat: THREE.Material) {
-  for (const y of [H * 0.32, -H * 0.32]) {
-    const c = box(1.6, 9, 1.4, 0.4, mat)
-    c.position.set(W - t - 0.9, y, t + hw - 0.5)
-    g.add(c)
   }
 }
