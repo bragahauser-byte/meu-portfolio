@@ -60,6 +60,12 @@
       "name": "Favorite books",
       "title": "Favorite Books — Gabriel Braga",
       "description": "Books that shaped how Gabriel Braga thinks about design, by Don Norman, Paul Rand, Massimo Vignelli, Ellen Lupton and more — browsed as 3D books."
+    },
+    "games": {
+      "path": "/about/games/",
+      "name": "Favorite games",
+      "title": "Games — Gabriel Braga",
+      "description": "Games from Gabriel Braga's shelf, from Red Dead Redemption 2 and Shadow of the Colossus to Death Stranding and The Last of Us — physical PS2, PS4, PS5 and Xbox 360 cases you can open, turn in 3D and take the disc out of."
     }
   }
 }

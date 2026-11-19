@@ -1,8 +1,10 @@
+import type { PlatformId } from "./games/platforms"
+
 // Favorites shown on the About screens. Every entry credits its authors:
 // albums → artist, films/series → director (and original author when it is
 // an adaptation), books → author. Covers live in /public/about.
 
-export type Category = "albums" | "films" | "books"
+export type Category = "albums" | "films" | "books" | "games"
 
 export type Favorite = {
   slug: string
@@ -12,6 +14,13 @@ export type Favorite = {
   edge: string // average color of the cover's left edge (book spine, sleeve edge)
   tone: string // average color of the whole cover
   track?: { title: string; src: string } // albums only
+  game?: GameMedia // games only
+}
+
+export type GameMedia = {
+  platform: PlatformId
+  wrap: string // full cover insert (back | spine | front), for the 3D viewer
+  discs: string[] // printed face of each disc; empty = no disc in the case
 }
 
 const base = import.meta.env.BASE_URL
@@ -106,12 +115,49 @@ export const books: Favorite[] = [
   book("distinction", "Distinction: A Social Critique of the Judgement of Taste", "Pierre Bourdieu", [134, 108, 81], [181, 122, 67]),
 ]
 
-export const favorites: Record<Category, Favorite[]> = { albums, films, books }
+// Games: each one is a physical case. `cover` is the small insert scan used by
+// the shelf (CSS 3D); the viewer loads the full scan and the disc photos only
+// when a case is opened. GTA VI has no disc on purpose — the case is empty.
+const platformName: Record<PlatformId, string> = { ps2: "PlayStation 2", ps4: "PlayStation 4", ps5: "PlayStation 5", x360: "Xbox 360" }
+function game(slug: string, title: string, studio: string, platform: PlatformId, year: number, discCount: number, edge: number[], tone: number[]): Favorite {
+  const dir = `${base}about/games/${slug}/`
+  return {
+    slug,
+    title,
+    credit: `${studio} · ${platformName[platform]}, ${year}`,
+    cover: `${dir}cover-sm.webp`,
+    edge: rgb(edge),
+    tone: rgb(tone),
+    game: {
+      platform,
+      wrap: `${dir}cover.webp`,
+      // two discs: [right half (tray), left half (inside the cover)] — the scans
+      // are named after where they sit in the real case: disc-1 left, disc-2 right
+      discs: discCount === 1 ? [`${dir}disc.webp`] : discCount === 2 ? [`${dir}disc-2.webp`, `${dir}disc-1.webp`] : [],
+    },
+  }
+}
+
+export const games: Favorite[] = [
+  game("red-dead-redemption-2", "Red Dead Redemption 2", "Rockstar Games", "ps4", 2018, 2, [196, 40, 28], [178, 62, 38]),
+  game("shadow-of-the-colossus", "Shadow of the Colossus", "Team Ico", "ps2", 2005, 1, [12, 12, 12], [120, 96, 62]),
+  game("death-stranding-2", "Death Stranding 2: On the Beach", "Kojima Productions", "ps5", 2025, 1, [250, 250, 250], [170, 120, 104]),
+  game("gta-iv", "Grand Theft Auto IV", "Rockstar North", "x360", 2008, 1, [40, 40, 40], [120, 112, 100]),
+  game("the-last-of-us", "The Last of Us Remastered", "Naughty Dog", "ps4", 2014, 1, [20, 20, 20], [60, 58, 54]),
+  game("lego-marvel", "LEGO Marvel Super Heroes", "TT Games", "x360", 2013, 1, [236, 236, 236], [110, 116, 130]),
+  game("spider-man", "Marvel's Spider-Man", "Insomniac Games", "ps4", 2018, 1, [150, 30, 28], [176, 50, 40]),
+  game("death-stranding", "Death Stranding", "Kojima Productions", "ps4", 2019, 1, [16, 22, 30], [40, 52, 62]),
+  game("fifa-16", "FIFA 16", "EA Canada", "ps4", 2015, 1, [250, 250, 250], [70, 96, 120]),
+  game("gta-vi", "Grand Theft Auto VI", "Rockstar Games", "ps5", 2026, 0, [24, 20, 30], [150, 100, 150]),
+]
+
+export const favorites: Record<Category, Favorite[]> = { albums, films, books, games }
 
 export const categoryLabel: Record<Category, string> = {
   albums: "Albums",
   films: "Screen",
   books: "Books",
+  games: "Games",
 }
 
 // About text: one array per paragraph; links are { text, href }.

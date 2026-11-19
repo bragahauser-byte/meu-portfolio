@@ -14,71 +14,71 @@ import type { AboutView } from "./about/AboutPage"
 import Intro from "./Intro"
 
 // ── Home carousel images ──────────────────────────────────────────────────────
-import imgC0 from "@/imports/Playstation/01.png"
-import imgC1 from "@/imports/Playstation/card-2.png"
-import imgC2 from "@/imports/Decolar/card-1.png"
-import imgC3 from "@/imports/Decolar/card-2.png"
-import imgC4 from "@/imports/Decolar/card-3.png"
-import imgC5 from "@/imports/Soundroom/card-1.png"
+import imgC0 from "@/imports/Playstation/01.webp"
+import imgC1 from "@/imports/Playstation/card-2.webp"
+import imgC2 from "@/imports/Decolar/card-1.webp"
+import imgC3 from "@/imports/Decolar/card-2.webp"
+import imgC4 from "@/imports/Decolar/card-3.webp"
+import imgC5 from "@/imports/Soundroom/card-1.webp"
 
 // ── Playstation detail ────────────────────────────────────────────────────────
-import imgPS1 from "@/imports/Playstation/01.png"
-import imgPS2 from "@/imports/Playstation/02.png"
-import imgPS3 from "@/imports/Playstation/03.png"
-import imgPS4 from "@/imports/Playstation/04.png"
-import imgPS5 from "@/imports/Playstation/05.png"
-import imgPS6 from "@/imports/Playstation/06.png"
+import imgPS1 from "@/imports/Playstation/01.webp"
+import imgPS2 from "@/imports/Playstation/02.webp"
+import imgPS3 from "@/imports/Playstation/03.webp"
+import imgPS4 from "@/imports/Playstation/04.webp"
+import imgPS5 from "@/imports/Playstation/05.webp"
+import imgPS6 from "@/imports/Playstation/06.webp"
 
 // ── Decolar detail ────────────────────────────────────────────────────────────
-import imgDec1 from "@/imports/Decolar/01.jpg"
-import imgDec2 from "@/imports/Decolar/02.jpg"
-import imgDec3 from "@/imports/Decolar/03.jpg"
-import imgDec4 from "@/imports/Decolar/04.jpg"
-import imgDec5 from "@/imports/Decolar/05.jpg"
-import imgDec6 from "@/imports/Decolar/06.jpg"
-import imgDec7 from "@/imports/Decolar/07.jpg"
-import imgDec8 from "@/imports/Decolar/08.jpg"
-import imgDec9 from "@/imports/Decolar/09.jpg"
-import imgDec10 from "@/imports/Decolar/10.jpg"
+import imgDec1 from "@/imports/Decolar/01.webp"
+import imgDec2 from "@/imports/Decolar/02.webp"
+import imgDec3 from "@/imports/Decolar/03.webp"
+import imgDec4 from "@/imports/Decolar/04.webp"
+import imgDec5 from "@/imports/Decolar/05.webp"
+import imgDec6 from "@/imports/Decolar/06.webp"
+import imgDec7 from "@/imports/Decolar/07.webp"
+import imgDec8 from "@/imports/Decolar/08.webp"
+import imgDec9 from "@/imports/Decolar/09.webp"
+import imgDec10 from "@/imports/Decolar/10.webp"
 
 // ── Aviva detail ──────────────────────────────────────────────────────────────
-import imgAvC1 from "@/imports/Aviva/card-1.jpg"
-import imgAvC2 from "@/imports/Aviva/card-2.jpg"
-import imgAvC3 from "@/imports/Aviva/card-3.jpg"
-import imgAv1 from "@/imports/Aviva/01.jpg"
-import imgAv2 from "@/imports/Aviva/02.jpg"
-import imgAv3 from "@/imports/Aviva/03.jpg"
-import imgAv4 from "@/imports/Aviva/04.jpg"
-import imgAv5 from "@/imports/Aviva/05.jpg"
-import imgAv6 from "@/imports/Aviva/06.jpg"
-import imgAv7 from "@/imports/Aviva/07.jpg"
-import imgAv8 from "@/imports/Aviva/08.jpg"
-import imgAv9 from "@/imports/Aviva/09.jpg"
-import imgAv10 from "@/imports/Aviva/10.jpg"
+import imgAvC1 from "@/imports/Aviva/card-1.webp"
+import imgAvC2 from "@/imports/Aviva/card-2.webp"
+import imgAvC3 from "@/imports/Aviva/card-3.webp"
+import imgAv1 from "@/imports/Aviva/01.webp"
+import imgAv2 from "@/imports/Aviva/02.webp"
+import imgAv3 from "@/imports/Aviva/03.webp"
+import imgAv4 from "@/imports/Aviva/04.webp"
+import imgAv5 from "@/imports/Aviva/05.webp"
+import imgAv6 from "@/imports/Aviva/06.webp"
+import imgAv7 from "@/imports/Aviva/07.webp"
+import imgAv8 from "@/imports/Aviva/08.webp"
+import imgAv9 from "@/imports/Aviva/09.webp"
+import imgAv10 from "@/imports/Aviva/10.webp"
 import vidAvMenu from "@/imports/Aviva/menu.mp4"
 import vidAvProduto from "@/imports/Aviva/produto.mp4"
 
 // ── São Paulo Metro detail ────────────────────────────────────────────────────
-import imgMtC1 from "@/imports/Metro/card-1.jpg"
-import imgMtC2 from "@/imports/Metro/card-2.jpg"
-import imgMt1 from "@/imports/Metro/01.jpg"
-import imgMt2 from "@/imports/Metro/02.jpg"
-import imgMt3 from "@/imports/Metro/03.jpg"
-import imgMt4 from "@/imports/Metro/04.jpg"
-import imgMt5 from "@/imports/Metro/05.jpg"
-import imgMt6 from "@/imports/Metro/06.jpg"
-import imgMt7 from "@/imports/Metro/07.jpg"
-import imgMt8 from "@/imports/Metro/08.jpg"
-import imgMt9 from "@/imports/Metro/09.jpg"
+import imgMtC1 from "@/imports/Metro/card-1.webp"
+import imgMtC2 from "@/imports/Metro/card-2.webp"
+import imgMt1 from "@/imports/Metro/01.webp"
+import imgMt2 from "@/imports/Metro/02.webp"
+import imgMt3 from "@/imports/Metro/03.webp"
+import imgMt4 from "@/imports/Metro/04.webp"
+import imgMt5 from "@/imports/Metro/05.webp"
+import imgMt6 from "@/imports/Metro/06.webp"
+import imgMt7 from "@/imports/Metro/07.webp"
+import imgMt8 from "@/imports/Metro/08.webp"
+import imgMt9 from "@/imports/Metro/09.webp"
 import vidMtVisaoGeral from "@/imports/Metro/visao-geral.mp4"
 
 // ── Soundroom detail ──────────────────────────────────────────────────────────
-import imgSnd1 from "@/imports/Soundroom/01.png"
-import imgSnd2 from "@/imports/Soundroom/02.png"
-import imgSnd3 from "@/imports/Soundroom/03.png"
-import imgSnd4 from "@/imports/Soundroom/04.png"
-import imgSnd5 from "@/imports/Soundroom/05.png"
-import imgSnd6 from "@/imports/Soundroom/06.png"
+import imgSnd1 from "@/imports/Soundroom/01.webp"
+import imgSnd2 from "@/imports/Soundroom/02.webp"
+import imgSnd3 from "@/imports/Soundroom/03.webp"
+import imgSnd4 from "@/imports/Soundroom/04.webp"
+import imgSnd5 from "@/imports/Soundroom/05.webp"
+import imgSnd6 from "@/imports/Soundroom/06.webp"
 
 // ── Types & data ──────────────────────────────────────────────────────────────
 type ProjectId = "playstation" | "decolar" | "aviva" | "metro" | "soundroom"
@@ -1233,12 +1233,14 @@ const aboutViews: Record<string, AboutView> = {
   "/about/screen": "films",
   "/about/films": "films", // old link
   "/about/books": "books",
+  "/about/games": "games",
 }
 const aboutToPath: Record<AboutView, string> = {
   about: "/about",
   albums: "/about/albums",
   films: "/about/screen",
   books: "/about/books",
+  games: "/about/games",
 }
 const projectToPath: Record<ProjectId, string> = {
   decolar: "/decolar",

@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 import Carousel3D from "./Carousel3D"
 import { aboutParagraphs, categoryLabel, favorites } from "./data"
@@ -6,9 +6,15 @@ import type { Category } from "./data"
 import { useTrack } from "./useTrack"
 import "./about.css"
 
+// The 3D case viewer (and three.js with it) only loads when a case is opened.
+const GameViewer = lazy(() => import("./games/GameViewer"))
+const preloadViewer = () => {
+  void import("./games/GameViewer").then((m) => m.loadSceneModule())
+}
+
 export type AboutView = "about" | Category
 
-const categories: Category[] = ["albums", "films", "books"]
+const categories: Category[] = ["albums", "films", "books", "games"]
 
 const links = {
   workco: "https://www.work.co/",
@@ -300,10 +306,41 @@ function FavoritesScene({
   const track = kind === "albums" ? item.track ?? null : null
   const { playing, muted, toggle } = useTrack(track?.src ?? null)
 
+  const isGames = kind === "games"
+  const [viewing, setViewing] = useState<number | null>(null)
+  const [hidden, setHidden] = useState<number | null>(null)
+
   const onActiveChange = useCallback((i: number) => setActive(i), [])
-  const onActivate = useCallback(() => {
-    if (kind === "albums") toggle()
-  }, [kind, toggle])
+  const onActivate = useCallback(
+    (i: number) => {
+      if (kind === "albums") toggle()
+      if (kind === "games") setViewing(i)
+    },
+    [kind, toggle],
+  )
+
+  // Games: warm the cache for the case in front (insert scan + discs) and,
+  // after the first interaction, three.js itself — so opening is instant.
+  useEffect(() => {
+    if (!isGames) return
+    const g = items[active]?.game
+    if (!g) return
+    const t = window.setTimeout(() => {
+      for (const src of [g.wrap, ...g.discs]) {
+        const img = new Image()
+        img.decoding = "async"
+        img.src = src
+      }
+      if (touched) preloadViewer()
+    }, 450)
+    return () => window.clearTimeout(t)
+  }, [isGames, items, active, touched])
+
+  const originRect = useCallback(() => {
+    if (viewing === null) return null
+    const el = document.querySelector<HTMLElement>(`.c3d-games .c3d-item[data-idx="${viewing}"] .gbox-front`)
+    return el?.getBoundingClientRect() ?? null
+  }, [viewing])
 
   useEffect(() => {
     const on = () => setTouched(true)
@@ -325,6 +362,8 @@ function FavoritesScene({
         reducedMotion={reducedMotion}
         onActiveChange={onActiveChange}
         onActivate={onActivate}
+        paused={viewing !== null}
+        hiddenIndex={hidden}
       />
 
       <div className="about-bottom about-type">
@@ -354,10 +393,26 @@ function FavoritesScene({
         )}
       </div>
 
-      {!touched && !track && (
-        <p className="about-hint about-type m-0" aria-hidden="true">
-          Scroll
+      {!track && (!touched || isGames) && (
+        <p className="about-hint about-type m-0" aria-hidden="true" data-quiet={viewing !== null}>
+          {isGames ? (touched ? "Click a case to open it" : "Scroll · Click to open") : "Scroll"}
         </p>
+      )}
+
+      {isGames && viewing !== null && (
+        <Suspense fallback={null}>
+          <GameViewer
+            item={items[viewing]}
+            origin={originRect}
+            reducedMotion={reducedMotion}
+            onLift={() => setHidden(viewing)}
+            onLand={() => setHidden(null)}
+            onClosed={() => {
+              setHidden(null)
+              setViewing(null)
+            }}
+          />
+        </Suspense>
       )}
     </>
   )

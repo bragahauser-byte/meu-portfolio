@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { CSSProperties } from "react"
 import type { Category, Favorite } from "./data"
+import { cases, SPINE_U0, SPINE_U1 } from "./games/platforms"
 
 // ── Looping 3D carousel ──────────────────────────────────────────────────────
 // Pure CSS 3D (no WebGL): every item is a small box of transformed faces that
@@ -50,6 +51,9 @@ const band = (rel: number, lo: number, hi: number, f: number) =>
 // and fade before they cross into the first column.
 const step = (rel: number) => ({ f: clamp(rel, 0, 1), g: Math.max(rel - 1, 0) })
 const BOOK_RATIO = 670 / 966
+// Game cases: the unit is the height of a DVD case (190 mm); Blu-ray cases
+// (170 mm) stand on the same shelf, so they are visibly shorter.
+const CASE_RATIO = 135 / 190
 const mobile = (vw: number) => vw < 768
 
 const layouts: Record<Category, Layout> = {
@@ -115,6 +119,28 @@ const layouts: Record<Category, Layout> = {
       }
     },
   },
+  // Game cases on a shelf: the active one faces you, the rest turn to show
+  // their spines, like a row of cases seen from the side.
+  games: {
+    unit: (vw, vh) => (mobile(vw) ? Math.min(vw * 0.78, vh * 0.44) : Math.min(vh * 0.56, vw * (vw < 1024 ? 0.5 : 0.3))),
+    half: (u) => (u * CASE_RATIO) / 2,
+    top: 54,
+    perspective: 1900,
+    intro: 5,
+    place: (rel, a, u) => {
+      const { f, g } = step(rel)
+      const w = u * CASE_RATIO
+      return {
+        x: rel < 0 ? rel * w * 1.2 : w * 1.14 * f + w * 0.2 * g,
+        y: -a * u * 0.012,
+        z: rel < 0 ? 0 : -w * 0.34 * f - w * 0.035 * g,
+        rx: 2,
+        ry: rel < 0 ? 4 : 4 + 70 * f,
+        rz: 0,
+        o: band(rel, -0.35, 7.6, 0.6),
+      }
+    },
+  },
 }
 
 function useViewport() {
@@ -138,6 +164,8 @@ export default function Carousel3D({
   reducedMotion,
   onActiveChange,
   onActivate,
+  paused = false,
+  hiddenIndex = null,
 }: {
   kind: Category
   items: Favorite[]
@@ -146,6 +174,8 @@ export default function Carousel3D({
   reducedMotion: boolean
   onActiveChange: (index: number) => void
   onActivate: (index: number) => void // click on the already-active item
+  paused?: boolean // input off (a game case is open on top)
+  hiddenIndex?: number | null // item lifted out of the row by the viewer
 }) {
   const layout = layouts[kind]
   const n = items.length
@@ -160,6 +190,10 @@ export default function Carousel3D({
   const onActivateRef = useRef(onActivate)
   onActiveChangeRef.current = onActiveChange
   onActivateRef.current = onActivate
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
+  const hiddenRef = useRef(hiddenIndex)
+  hiddenRef.current = hiddenIndex
 
   const state = useRef({
     pos: reducedMotion ? 0 : -layout.intro,
@@ -181,9 +215,12 @@ export default function Carousel3D({
     let raf = 0
     let last = performance.now()
 
+    let settled = 0 // frames in a row with nothing moving
+    let lastHidden: number | null | undefined
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
+      raf = requestAnimationFrame(frame)
 
       // once input settles, snap to an item — leaning in the direction of
       // travel, so a single wheel click always moves exactly one item
@@ -198,6 +235,17 @@ export default function Carousel3D({
       // pointer parallax on the whole world
       s.tiltX += (s.pointerY * -1.6 - s.tiltX) * (1 - Math.exp(-dt * 4))
       s.tiltY += (s.pointerX * 2.2 - s.tiltY) * (1 - Math.exp(-dt * 4))
+      // Nothing moving: leave the DOM alone (the browser can skip style and
+      // layout work entirely while the row is at rest).
+      const moving =
+        s.target !== s.pos ||
+        Math.abs(s.pointerY * -1.6 - s.tiltX) > 0.002 ||
+        Math.abs(s.pointerX * 2.2 - s.tiltY) > 0.002 ||
+        lastHidden !== hiddenRef.current
+      settled = moving ? 0 : settled + 1
+      if (settled > 2) return
+      lastHidden = hiddenRef.current
+
       if (worldRef.current) {
         worldRef.current.style.transform = `rotateX(${s.tiltX.toFixed(3)}deg) rotateY(${s.tiltY.toFixed(3)}deg)`
       }
@@ -212,7 +260,7 @@ export default function Carousel3D({
         el.style.transform = `translate3d(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px, ${p.z.toFixed(2)}px) rotateX(${p.rx.toFixed(2)}deg) rotateY(${p.ry.toFixed(2)}deg) rotateZ(${p.rz.toFixed(2)}deg)`
         el.style.setProperty("--o", p.o.toFixed(3))
         el.style.setProperty("--a", a.toFixed(3))
-        el.style.visibility = p.o < 0.002 ? "hidden" : "visible"
+        el.style.visibility = p.o < 0.002 || i === hiddenRef.current ? "hidden" : "visible"
       }
 
       const idx = ((Math.round(s.pos) % n) + n) % n
@@ -221,7 +269,6 @@ export default function Carousel3D({
         setActive(idx)
         onActiveChangeRef.current(idx)
       }
-      raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
@@ -235,6 +282,7 @@ export default function Carousel3D({
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
+      if (pausedRef.current) return
       const d = (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) + (e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX)
       const delta = clamp(d * 0.0085, -0.9, 0.9) // one wheel notch ≈ one item
       s.target += delta
@@ -242,6 +290,14 @@ export default function Carousel3D({
       s.lastInput = performance.now()
     }
     const onKey = (e: KeyboardEvent) => {
+      if (pausedRef.current) return
+      if (e.key === "Enter" && (e.target as Element | null)?.closest?.("button, a, input")) return
+      if (e.key === "Enter" || e.key === " ") {
+        if ((e.target as Element | null)?.closest?.("button, a")) return
+        e.preventDefault()
+        onActivateRef.current(((Math.round(s.target) % n) + n) % n)
+        return
+      }
       if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) {
         s.target = Math.round(s.target) + 1
       } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
@@ -254,6 +310,7 @@ export default function Carousel3D({
     let drag: { x: number; y: number; t: number; moved: boolean; id: number } | null = null
     let lastMove = { x: 0, t: 0, v: 0 }
     const onDown = (e: PointerEvent) => {
+      if (pausedRef.current) return
       drag = { x: e.clientX, y: e.clientY, t: s.target, moved: false, id: e.pointerId }
       lastMove = { x: e.clientX, t: performance.now(), v: 0 }
     }
@@ -348,6 +405,7 @@ export default function Carousel3D({
               {kind === "albums" && <Record item={it} u={u} spinning={i === active && playing} />}
               {kind === "films" && <Disc item={it} u={u} />}
               {kind === "books" && <Book item={it} u={u} index={i} />}
+              {kind === "games" && <GameBox item={it} u={u} />}
             </div>
           ))}
         </div>
@@ -455,6 +513,56 @@ function Book({ item, u, index }: { item: Favorite; u: number; index: number }) 
       <div className="face book-pages book-pages-side" style={face(d - 4, h - 6, `rotateY(90deg) translateZ(${w / 2 - 3}px)`)} />
       <div className="face book-pages book-pages-top" style={face(w - 4, d - 4, `rotateX(90deg) translateZ(${h / 2 - 3}px)`)} />
       <div className="face book-pages book-pages-bottom" style={face(w - 4, d - 4, `rotateX(-90deg) translateZ(${h / 2 - 3}px)`)} />
+    </div>
+  )
+}
+
+// ── Game case ────────────────────────────────────────────────────────────────
+// Shelf version of the case (CSS 3D, no WebGL): plastic shell in the
+// platform's colour, the scanned insert under the clear sleeve on the front,
+// spine and back. The full articulated model lives in GameViewer.
+const css = (c: [number, number, number], a = 1) =>
+  `rgb(${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)} / ${a})`
+
+function GameBox({ item, u }: { item: Favorite; u: number }) {
+  const spec = cases[item.game!.platform]
+  const k = u / 190
+  const h = spec.h * k
+  const w = spec.w * k
+  const d = spec.d * k
+  const lift = (u - h) / 2 // stand on the same shelf line as the 190 mm cases
+  const face = (fw: number, fh: number, transform: string, extra: CSSProperties = {}): CSSProperties => ({
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: fw,
+    height: fh,
+    marginLeft: -fw / 2,
+    marginTop: -fh / 2,
+    transform,
+    ...extra,
+  })
+  const shell = css(spec.plastic, spec.opacity < 1 ? 0.92 : 1)
+  const wrap = `url(${item.cover})`
+  const spineW = (SPINE_U1 - SPINE_U0) * 100
+  return (
+    <div
+      className="gbox"
+      data-platform={item.game!.platform}
+      style={{ transform: `translateY(${lift}px)`, "--shell": shell } as CSSProperties}
+    >
+      <div className="face gbox-front" style={face(w, h, `translateZ(${d / 2}px)`)}>
+        <div className="gbox-insert" style={{ backgroundImage: wrap, backgroundSize: `${(284 / 135) * 100}% 100%`, backgroundPosition: "100% 0" }} />
+      </div>
+      <div className="face gbox-back" style={face(w, h, `rotateY(180deg) translateZ(${d / 2}px)`)}>
+        <div className="gbox-insert" style={{ backgroundImage: wrap, backgroundSize: `${(284 / 135) * 100}% 100%`, backgroundPosition: "0 0" }} />
+      </div>
+      <div className="face gbox-spine" style={face(d, h, `rotateY(-90deg) translateZ(${w / 2}px)`)}>
+        <div className="gbox-insert" style={{ backgroundImage: wrap, backgroundSize: `${(100 / spineW) * 100}% 100%`, backgroundPosition: "50% 0" }} />
+      </div>
+      <div className="face gbox-edge gbox-edge-side" style={face(d, h, `rotateY(90deg) translateZ(${w / 2}px)`)} />
+      <div className="face gbox-edge" style={face(w, d, `rotateX(90deg) translateZ(${h / 2}px)`)} />
+      <div className="face gbox-edge" style={face(w, d, `rotateX(-90deg) translateZ(${h / 2}px)`)} />
     </div>
   )
 }
